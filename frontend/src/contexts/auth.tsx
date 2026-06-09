@@ -10,7 +10,7 @@ interface AuthContextData {
   user: UserWithPerfil | null
   token: string | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<UserWithPerfil | null>
   logout: () => void
 }
 
@@ -21,37 +21,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  async function fetchPerfil(uid: string, accessToken: string) {
-    try {
-      const { data } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('id', uid)
-        .single()
+  async function fetchPerfil(uid: string, accessToken: string): Promise<UserWithPerfil> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', uid)
+      .single()
 
-      // Se encontrou perfil, usa ele; caso contrário cria perfil básico
-      const userData: UserWithPerfil = data ?? {
-        id: uid,
-        nome: 'Usuário',
-        email: '',
-        ativo: true,
-        perfil_sistema: 'user',
-        construtora_id: undefined,
-      }
-
-      setUser(userData)
-      setToken(accessToken)
-      localStorage.setItem('sgo_token', accessToken)
-      localStorage.setItem('sgo_user', JSON.stringify(userData))
-    } catch {
-      // Mesmo com erro, cria sessão básica para não bloquear login
-      const userData: UserWithPerfil = {
-        id: uid, nome: 'Usuário', email: '',
-        ativo: true, perfil_sistema: 'user', construtora_id: undefined,
-      }
-      setUser(userData)
-      setToken(accessToken)
+    if (error) {
+      console.warn('[SGO] fetchPerfil erro:', error.message)
     }
+
+    // Se encontrou perfil, usa ele; caso contrário cria perfil básico
+    const userData: UserWithPerfil = (data && data.id) ? data : {
+      id: uid,
+      nome: 'Usuário',
+      email: '',
+      ativo: true,
+      perfil_sistema: 'user' as PerfilSistema,
+      construtora_id: undefined,
+    }
+
+    setUser(userData)
+    setToken(accessToken)
+    localStorage.setItem('sgo_token', accessToken)
+    localStorage.setItem('sgo_user', JSON.stringify(userData))
+    return userData
   }
 
   useEffect(() => {
@@ -82,12 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<UserWithPerfil | null> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
     if (data.session) {
-      await fetchPerfil(data.session.user.id, data.session.access_token)
+      const perfil = await fetchPerfil(data.session.user.id, data.session.access_token)
+      return perfil
     }
+    return null
   }
 
   const logout = async () => {

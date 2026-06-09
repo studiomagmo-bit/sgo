@@ -1,42 +1,41 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import { toast } from 'sonner'
 import { Building2, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
-  const { login, user, loading } = useAuth()
+  const { login } = useAuth()
   const router = useRouter()
-  const [email, setEmail]       = useState('')
+  const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  // Navega para dashboard assim que user for setado
-  useEffect(() => {
-    if (!loading && user) router.replace('/dashboard')
-  }, [user, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await login(email, password)
-      // navegação acontece no useEffect acima
+      const perfil = await login(email, password)
+      // Redireciona baseado no perfil do usuário
+      if (perfil?.perfil_sistema === 'superadmin') {
+        router.replace('/admin')
+      } else {
+        router.replace('/dashboard')
+      }
     } catch (err: any) {
       const msg = err?.message || ''
-      if (msg.includes('Invalid login') || msg.includes('invalid') || msg.includes('credencial')) {
+      if (msg.includes('Invalid login') || msg.includes('invalid credentials')) {
         toast.error('E-mail ou senha incorretos.')
       } else if (msg.includes('Email not confirmed')) {
         toast.error('Confirme seu e-mail antes de acessar.')
       } else {
         toast.error(msg || 'Erro ao fazer login. Tente novamente.')
       }
+    } finally {
       setSubmitting(false)
     }
   }
-
-  if (loading) return null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
