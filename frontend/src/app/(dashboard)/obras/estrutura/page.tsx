@@ -198,6 +198,7 @@ interface ModalAdicionarProps {
   obraId: string
   parentId: string | null
   parentNome?: string
+  tipoInicial?: TipoEstrutura
   onClose: () => void
   onSaved: () => void
 }
@@ -206,10 +207,11 @@ function ModalAdicionar({
   obraId,
   parentId,
   parentNome,
+  tipoInicial = 'setor',
   onClose,
   onSaved,
 }: ModalAdicionarProps) {
-  const [tipo, setTipo] = useState<TipoEstrutura>('setor')
+  const [tipo, setTipo] = useState<TipoEstrutura>(tipoInicial)
   const [nome, setNome] = useState('')
   const [codigo, setCodigo] = useState('')
   const [area, setArea] = useState('')
@@ -443,6 +445,7 @@ function EstruturaObraPageInner() {
   const [modalAberto, setModalAberto] = useState(false)
   const [parentIdModal, setParentIdModal] = useState<string | null>(null)
   const [parentNomeModal, setParentNomeModal] = useState<string | undefined>(undefined)
+  const [tipoModalInicial, setTipoModalInicial] = useState<TipoEstrutura>('setor')
 
   // Flat map para lookup de nome por id
   const nosMap = useCallback(
@@ -480,6 +483,14 @@ function EstruturaObraPageInner() {
   function abrirModalRaiz() {
     setParentIdModal(null)
     setParentNomeModal(undefined)
+    setTipoModalInicial('setor')
+    setModalAberto(true)
+  }
+
+  function abrirComTipo(tipo: TipoEstrutura) {
+    setParentIdModal(null)
+    setParentNomeModal(undefined)
+    setTipoModalInicial(tipo)
     setModalAberto(true)
   }
 
@@ -487,6 +498,7 @@ function EstruturaObraPageInner() {
     const no = nosMap(parentId)
     setParentIdModal(parentId)
     setParentNomeModal(no?.nome)
+    setTipoModalInicial('setor')
     setModalAberto(true)
   }
 
@@ -554,20 +566,27 @@ function EstruturaObraPageInner() {
         </button>
       </div>
 
-      {/* ── Legenda dos tipos ── */}
-      <div className="flex flex-wrap gap-2">
-        {TIPOS_ORDENADOS.map((t) => {
-          const cfg = TIPO_CONFIG[t]
-          return (
-            <span
-              key={t}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${cfg.bg} ${cfg.cor} ${cfg.borda}`}
-            >
-              {cfg.icone}
-              {cfg.label}
-            </span>
-          )
-        })}
+      {/* ── Atalhos de criação rápida de nó raiz ── */}
+      <div>
+        <p className="text-xs text-gray-400 font-medium mb-2 uppercase tracking-wide">
+          Adicionar nó raiz:
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {TIPOS_ORDENADOS.map((t) => {
+            const cfg = TIPO_CONFIG[t]
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => abrirComTipo(t)}
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium cursor-pointer hover:shadow-md hover:scale-105 transition-all ${cfg.bg} ${cfg.cor} ${cfg.borda}`}
+              >
+                {cfg.icone}
+                {cfg.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── Árvore ── */}
@@ -617,6 +636,7 @@ function EstruturaObraPageInner() {
           obraId={obraId}
           parentId={parentIdModal}
           parentNome={parentNomeModal}
+          tipoInicial={tipoModalInicial}
           onClose={fecharModal}
           onSaved={() => {
             fecharModal()
