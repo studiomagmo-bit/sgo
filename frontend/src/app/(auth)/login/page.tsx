@@ -3,21 +3,21 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import { toast } from 'sonner'
-import { Building2, Loader2 } from 'lucide-react'
+import { Building2, Loader2, Lock, Mail, HardHat, Users, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const router = useRouter()
-  const [email, setEmail]     = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [showPass, setShowPass] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     try {
       const perfil = await login(email, password)
-      // Redireciona baseado no perfil do usuário
       if (perfil?.perfil_sistema === 'superadmin') {
         router.replace('/admin')
       } else {
@@ -30,7 +30,7 @@ export default function LoginPage() {
       } else if (msg.includes('Email not confirmed')) {
         toast.error('Confirme seu e-mail antes de acessar.')
       } else {
-        toast.error(msg || 'Erro ao fazer login. Tente novamente.')
+        toast.error(msg || 'Erro ao fazer login.')
       }
     } finally {
       setSubmitting(false)
@@ -38,59 +38,131 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4">
-            <Building2 className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
+      {/* Background decorativo */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-white/5" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-white/5" />
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 rounded-full bg-white/3" />
+      </div>
+
+      <div className="relative w-full max-w-4xl flex rounded-3xl overflow-hidden shadow-2xl">
+
+        {/* Painel esquerdo — info */}
+        <div className="hidden md:flex flex-col justify-between w-1/2 bg-white/10 backdrop-blur-sm p-10 text-white">
+          <div>
+            <div className="flex items-center gap-3 mb-10">
+              <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xl font-bold leading-none">SGO</p>
+                <p className="text-xs text-blue-200">Sistema de Gestão de Obras</p>
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold mb-3 leading-snug">
+              Gerencie suas obras com inteligência
+            </h2>
+            <p className="text-blue-100 text-sm leading-relaxed">
+              Controle de PCP, efetivo, empreiteiros, medições e muito mais — tudo em um lugar.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-white">SGO</h1>
-          <p className="text-slate-400 mt-1">Sistema de Gestão Operacional de Obras</p>
+
+          {/* Roles info */}
+          <div className="space-y-3">
+            {[
+              { icon: Users,    label: 'Gestor',      desc: 'Visualiza e gerencia todas as obras' },
+              { icon: Building2,label: 'Engenheiro',  desc: 'Gerencia sua obra e empreiteiros' },
+              { icon: HardHat,  label: 'Empreiteiro', desc: 'Portal próprio — /portal/login' },
+            ].map(r => (
+              <div key={r.label} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5">
+                <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                  <r.icon className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-white leading-none">{r.label}</p>
+                  <p className="text-xs text-blue-200 mt-0.5">{r.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Acessar o sistema</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                disabled={submitting}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
-                placeholder="seu@email.com"
-              />
+        {/* Painel direito — login */}
+        <div className="flex-1 bg-white p-10 flex flex-col justify-center">
+          {/* Logo mobile */}
+          <div className="flex items-center gap-3 mb-8 md:hidden">
+            <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-white" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                disabled={submitting}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
-                placeholder="••••••••"
-              />
+              <p className="font-bold text-gray-900">SGO</p>
+              <p className="text-xs text-gray-400">Sistema de Gestão de Obras</p>
             </div>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 text-white py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
-            >
-              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {submitting ? 'Entrando...' : 'Entrar'}
-            </button>
-          </form>
-        </div>
+          </div>
 
-        <p className="text-center text-slate-500 text-sm mt-6">
-          SGO v0.1.0 — Gestão Operacional de Obras
-        </p>
+          <div className="max-w-sm w-full mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Bem-vindo de volta</h2>
+            <p className="text-gray-400 text-sm mb-8">Faça login para acessar o sistema</p>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    disabled={submitting}
+                    placeholder="seu@email.com"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-3 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all disabled:opacity-60"
+                  />
+                </div>
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    disabled={submitting}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-10 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all disabled:opacity-60"
+                  />
+                  <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Botão */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-white py-3 text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 transition-all shadow-sm shadow-blue-200 mt-2"
+              >
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Entrando...</> : 'Entrar'}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+              <p className="text-xs text-gray-400">
+                Empreiteiro?{' '}
+                <a href="/portal/login" className="text-blue-600 hover:underline font-medium">
+                  Acessar Portal do Empreiteiro
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
