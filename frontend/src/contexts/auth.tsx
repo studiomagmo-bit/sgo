@@ -3,8 +3,10 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { authApi } from '@/lib/api'
 import type { Usuario } from '@/types'
 
+export type PerfilSistema = 'superadmin' | 'user'
+
 interface AuthContextData {
-  user: Usuario | null
+  user: (Usuario & { perfil_sistema?: PerfilSistema }) | null
   token: string | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>

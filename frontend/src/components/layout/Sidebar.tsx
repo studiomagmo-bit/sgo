@@ -6,7 +6,7 @@ import {
   Building2, LayoutDashboard, GitBranch, Users, ClipboardList,
   Wrench, Package, HardHat, CheckCircle, AlertTriangle,
   FileText, DollarSign, Truck, BookOpen, LogOut, ChevronRight,
-  Settings, BarChart3,
+  Settings, BarChart3, Shield,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -38,6 +38,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const isSuperAdmin = (user as any)?.perfil_sistema === 'superadmin'
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 border-r border-slate-700">
@@ -101,6 +102,15 @@ export function Sidebar() {
           <LogOut className="h-4 w-4" />
           Sair
         </button>
+        {isSuperAdmin && (
+          <Link
+            href="/admin"
+            className="sidebar-link text-purple-400 hover:text-purple-300 hover:bg-purple-900/30 mt-1"
+          >
+            <Shield className="h-4 w-4" />
+            Painel Admin
+          </Link>
+        )}
       </div>
     </aside>
   )
