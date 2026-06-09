@@ -408,7 +408,7 @@ export const dashboard = {
         .select('id, razao_social, ativo')
         .eq('ativo', true),
       supabase.from('medicoes')
-        .select('id, obra_id, status, valor_total'),
+        .select('id, obra_id, status, valor_liquido'),
     ])
     return {
       obras:          obrasList       ?? [],

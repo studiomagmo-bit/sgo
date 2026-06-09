@@ -116,7 +116,7 @@ export default function DashboardPage() {
   const pendAbertas     = pendencias.length
   const inspecPend      = inspecoes.filter((i: any) => i.status === 'aguardando').length
   const valorMed        = medicoes.filter((m: any) => ['aprovada', 'paga'].includes(m.status))
-    .reduce((s: number, m: any) => s + (m.valor_total || 0), 0)
+    .reduce((s: number, m: any) => s + (m.valor_liquido || 0), 0)
   const criticas        = atividades.filter((a: any) => a.prioridade === 'critica' && a.status !== 'concluida').length
 
   const obrasEnrich = obras.map((o: any) => {
