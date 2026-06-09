@@ -1,424 +1,207 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { obras as obrasApi } from '@/lib/sgoApi'
 import {
-  empreiteiros as empreiteirosApi,
-  obras as obrasApi,
-  atividades as atividadesApi,
-} from '@/lib/sgoApi'
-import type { Empreiteiro, Obra, Atividade, StatusAtividade } from '@/types'
-import {
-  HardHat, Loader2, AlertTriangle, CheckCircle2,
-  Clock, ListChecks, RefreshCw,
+  Users, HardHat, Building2, Loader2, TrendingUp,
+  CalendarDays, CheckCircle2, Clock, UserRound,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { clsx } from 'clsx'
 
-// ─── Configurações de badge ───────────────────────────────────
-const statusConfig: Record<StatusAtividade, { label: string; cls: string }> = {
-  planejada:    { label: 'Planejada',    cls: 'badge-cinza'    },
-  em_andamento: { label: 'Em Andamento', cls: 'badge-azul'     },
-  concluida:    { label: 'Concluída',    cls: 'badge-verde'    },
-  bloqueada:    { label: 'Bloqueada',    cls: 'badge-vermelho' },
-  cancelada:    { label: 'Cancelada',    cls: 'badge-cinza'    },
-}
-
-const STATUS_OPTIONS: { value: StatusAtividade; label: string }[] = [
-  { value: 'planejada',    label: 'Planejada'    },
-  { value: 'em_andamento', label: 'Em Andamento' },
-  { value: 'concluida',    label: 'Concluída'    },
-  { value: 'bloqueada',    label: 'Bloqueada'    },
-  { value: 'cancelada',    label: 'Cancelada'    },
-]
-
-// ─── Helper: verifica se atividade está atrasada ──────────────
-function isAtrasada(a: Atividade): boolean {
-  if (!a.data_fim_prev || a.status === 'concluida' || a.status === 'cancelada') return false
-  return new Date(a.data_fim_prev) < new Date()
-}
-
-// ─── Helper: formata data pt-BR ───────────────────────────────
-function fmtDate(d?: string | null): string {
-  if (!d) return '—'
-  // Evita offset de fuso ao parsear yyyy-mm-dd
-  const [y, m, day] = d.split('-')
-  return `${day}/${m}/${y}`
-}
-
-// ─── Barra de progresso ───────────────────────────────────────
-function ProgressBar({ pct }: { pct: number }) {
-  const p = Math.min(100, Math.max(0, pct))
-  const cor =
-    p >= 100 ? 'bg-green-500' :
-    p >= 50  ? 'bg-blue-500'  :
-    p > 0    ? 'bg-yellow-400':
-               'bg-gray-300'
+function KpiCard({ title, value, icon: Icon, color, bg }: any) {
   return (
-    <div className="flex items-center gap-2 min-w-[90px]">
-      <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-        <div className={clsx('h-1.5 rounded-full transition-all', cor)} style={{ width: `${p}%` }} />
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm flex items-center gap-4">
+      <div className={clsx('h-12 w-12 rounded-xl flex items-center justify-center shrink-0', bg)}>
+        <Icon className={clsx('h-6 w-6', color)} />
       </div>
-      <span className="text-xs tabular-nums text-gray-500 w-8 text-right">{p}%</span>
-    </div>
-  )
-}
-
-// ─── Card KPI ─────────────────────────────────────────────────
-function KpiCard({
-  label, value, icon: Icon, color,
-}: {
-  label: string
-  value: number | string
-  icon: React.ElementType
-  color: string
-}) {
-  return (
-    <div className={clsx('rounded-xl p-4 flex items-center gap-3', color)}>
-      <Icon className="h-7 w-7 shrink-0 opacity-80" />
       <div>
-        <p className="text-xs font-medium opacity-70">{label}</p>
-        <p className="text-2xl font-bold leading-tight">{value}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-sm text-gray-500">{title}</p>
       </div>
     </div>
   )
 }
 
-// ─── Página principal ─────────────────────────────────────────
-export default function EmpreteiroPortalPage() {
-  // ── Listas de filtro ──
-  const [listaEmpreiteiros, setListaEmpreiteiros] = useState<Empreiteiro[]>([])
-  const [listaObras, setListaObras]               = useState<Obra[]>([])
+export default function EfetivoDashboardPage() {
+  const [obras, setObras]           = useState<any[]>([])
+  const [efetivos, setEfetivos]     = useState<any[]>([])
+  const [empreiteiros, setEmp]      = useState<any[]>([])
+  const [loading, setLoading]       = useState(true)
+  const hoje = new Date().toISOString().split('T')[0]
 
-  // ── Seleções ──
-  const [empreteiroId, setEmpreteiroId] = useState<string>('')
-  const [obraId, setObraId]             = useState<string>('')
-  const [filtroStatus, setFiltroStatus] = useState<string>('')
-
-  // ── Atividades ──
-  const [todasAtividades, setTodasAtividades] = useState<Atividade[]>([])
-  const [loading, setLoading]                 = useState(false)
-
-  // ── Atualização inline de status ──
-  const [atualizando, setAtualizando] = useState<string | null>(null)
-
-  // ── Carrega listas ao montar ──
   useEffect(() => {
-    empreiteirosApi.listar().then(setListaEmpreiteiros)
-    obrasApi.listar().then(setListaObras)
+    setLoading(true)
+    Promise.all([
+      obrasApi.listar(),
+      supabase.from('efetivo_diario')
+        .select('*, obras(nome), empreiteiros(razao_social), efetivo_colaboradores(id, presente)')
+        .eq('data', hoje)
+        .order('criado_em', { ascending: false }),
+      supabase.from('empreiteiros')
+        .select('id, razao_social, ativo')
+        .eq('ativo', true)
+        .order('razao_social'),
+    ]).then(([ob, ef, emp]) => {
+      setObras(ob)
+      setEfetivos(ef.data ?? [])
+      setEmp(emp.data ?? [])
+    }).finally(() => setLoading(false))
   }, [])
 
-  // ── Carrega atividades quando empreiteiro ou obra muda ──
-  const carregarAtividades = () => {
-    if (!empreteiroId) {
-      setTodasAtividades([])
-      return
-    }
-    setLoading(true)
-    atividadesApi
-      .listar(obraId ? { obra_id: obraId } : undefined)
-      .then(data => setTodasAtividades(data as Atividade[]))
-      .catch(err => toast.error(err?.message ?? 'Erro ao carregar atividades'))
-      .finally(() => setLoading(false))
-  }
+  // Métricas
+  const totalPresentes = efetivos.reduce((s, e) => {
+    const pres = (e.efetivo_colaboradores ?? []).filter((c: any) => c.presente).length
+    return s + pres
+  }, 0)
+  const totalRegistros = efetivos.length
+  const obrasComEfetivo = new Set(efetivos.map(e => e.obra_id)).size
+  const obrasAtivas = obras.filter(o => o.status === 'em_andamento').length
 
-  useEffect(() => {
-    carregarAtividades()
-  }, [empreteiroId, obraId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Agrupar registros por obra
+  const porObra = obras.map(o => {
+    const regs = efetivos.filter(e => e.obra_id === o.id)
+    const presentes = regs.reduce((s, e) => s + (e.efetivo_colaboradores ?? []).filter((c: any) => c.presente).length, 0)
+    const emps = regs.map(e => e.empreiteiros?.razao_social).filter(Boolean)
+    return { ...o, regs, presentes, emps }
+  }).filter(o => o.regs.length > 0 || o.status === 'em_andamento')
 
-  // ── Filtragem client-side ──
-  const atividades = useMemo(() => {
-    let lista = todasAtividades.filter(a => a.empreiteiro_id === empreteiroId)
-    if (filtroStatus) lista = lista.filter(a => a.status === filtroStatus)
-    return lista
-  }, [todasAtividades, empreteiroId, filtroStatus])
-
-  // ── KPIs ──
-  const kpis = useMemo(() => {
-    // Usa todas as atividades do empreiteiro (sem filtro de status) para os KPIs
-    const base = todasAtividades.filter(a => a.empreiteiro_id === empreteiroId)
-    return {
-      total:       base.length,
-      emAndamento: base.filter(a => a.status === 'em_andamento').length,
-      atrasadas:   base.filter(isAtrasada).length,
-      concluidas:  base.filter(a => a.status === 'concluida').length,
-    }
-  }, [todasAtividades, empreteiroId])
-
-  // ── Atualiza status inline ──
-  const handleAtualizarStatus = async (id: string, novoStatus: StatusAtividade) => {
-    setAtualizando(id)
-    try {
-      await atividadesApi.atualizar(id, { status: novoStatus })
-      toast.success('Status atualizado com sucesso!')
-      carregarAtividades()
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao atualizar status')
-    } finally {
-      setAtualizando(null)
-    }
-  }
-
-  // ── Nome do empreiteiro selecionado ──
-  const empreteiroSelecionado = listaEmpreiteiros.find(e => e.id === empreteiroId)
-
-  // ────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-
-      {/* ── Cabeçalho ── */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <HardHat className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Portal do Empreiteiro</h1>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Efetivo Diário</h1>
+            <p className="text-blue-100 text-sm mt-1">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            {empreteiroSelecionado
-              ? `Visualizando painel de: ${empreteiroSelecionado.nome_fantasia || empreteiroSelecionado.razao_social}`
-              : 'Selecione um empreiteiro para visualizar suas atividades'}
-          </p>
-        </div>
-
-        {empreteiroId && (
-          <button
-            onClick={carregarAtividades}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={clsx('h-4 w-4', loading && 'animate-spin')} />
-            Recarregar
-          </button>
-        )}
-      </div>
-
-      {/* ── Filtros ── */}
-      <div className="rounded-xl border bg-white p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Filtros</p>
-        <div className="flex flex-wrap gap-3">
-
-          {/* Empreiteiro — obrigatório */}
-          <div className="flex flex-col gap-1 min-w-[220px]">
-            <label className="text-xs font-medium text-gray-600">
-              Empreiteiro <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={empreteiroId}
-              onChange={e => setEmpreteiroId(e.target.value)}
-              className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Selecione um empreiteiro...</option>
-              {listaEmpreiteiros.map(e => (
-                <option key={e.id} value={e.id}>
-                  {e.nome_fantasia || e.razao_social}
-                </option>
-              ))}
-            </select>
+          <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+            <Users className="h-6 w-6 text-white" />
           </div>
-
-          {/* Obra — opcional */}
-          <div className="flex flex-col gap-1 min-w-[200px]">
-            <label className="text-xs font-medium text-gray-600">Obra</label>
-            <select
-              value={obraId}
-              onChange={e => setObraId(e.target.value)}
-              disabled={!empreteiroId}
-              className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Todas as obras</option>
-              {listaObras.map(o => (
-                <option key={o.id} value={o.id}>{o.nome}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status — opcional */}
-          <div className="flex flex-col gap-1 min-w-[180px]">
-            <label className="text-xs font-medium text-gray-600">Status</label>
-            <select
-              value={filtroStatus}
-              onChange={e => setFiltroStatus(e.target.value)}
-              disabled={!empreteiroId}
-              className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Todos os status</option>
-              {STATUS_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-
         </div>
       </div>
 
-      {/* ── Estado vazio: nenhum empreiteiro selecionado ── */}
-      {!empreteiroId && (
-        <div className="rounded-xl border bg-white p-16 text-center text-gray-400 shadow-sm">
-          <HardHat className="h-14 w-14 mx-auto mb-4 text-gray-200" />
-          <p className="text-base font-medium text-gray-500">Nenhum empreiteiro selecionado</p>
-          <p className="text-sm mt-1">Selecione um empreiteiro no filtro acima para ver seus dados</p>
-        </div>
-      )}
-
-      {/* ── Conteúdo principal (após empreiteiro selecionado) ── */}
-      {empreteiroId && (
+      {loading ? (
+        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+      ) : (
         <>
-          {/* ── KPIs ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard
-              label="Total de Atividades"
-              value={kpis.total}
-              icon={ListChecks}
-              color="bg-slate-100 text-slate-800"
-            />
-            <KpiCard
-              label="Em Andamento"
-              value={kpis.emAndamento}
-              icon={Clock}
-              color="bg-blue-100 text-blue-800"
-            />
-            <KpiCard
-              label="Atrasadas"
-              value={kpis.atrasadas}
-              icon={AlertTriangle}
-              color="bg-red-100 text-red-800"
-            />
-            <KpiCard
-              label="Concluídas"
-              value={kpis.concluidas}
-              icon={CheckCircle2}
-              color="bg-green-100 text-green-800"
-            />
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard title="Trabalhadores hoje"   value={totalPresentes}  icon={Users}       color="text-blue-600"    bg="bg-blue-100" />
+            <KpiCard title="Obras com efetivo"    value={obrasComEfetivo} icon={Building2}   color="text-emerald-600" bg="bg-emerald-100" />
+            <KpiCard title="Obras ativas"         value={obrasAtivas}     icon={TrendingUp}  color="text-indigo-600"  bg="bg-indigo-100" />
+            <KpiCard title="Empreiteiros ativos"  value={empreiteiros.length} icon={HardHat} color="text-amber-600"   bg="bg-amber-100" />
           </div>
 
-          {/* ── Tabela ── */}
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          {/* Por obra */}
+          {porObra.length === 0 ? (
+            <div className="rounded-xl border bg-white p-12 text-center text-gray-400">
+              <CalendarDays className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+              <p className="font-medium">Nenhum efetivo registrado hoje.</p>
+              <p className="text-sm mt-1">Os empreiteiros registram a presença pelo portal próprio.</p>
             </div>
           ) : (
-            <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3 border-b bg-slate-50">
-                <p className="text-sm font-semibold text-gray-700">
-                  Atividades
-                  {filtroStatus && (
-                    <span className="ml-2 text-xs font-normal text-gray-400">
-                      · filtrado por "{statusConfig[filtroStatus as StatusAtividade]?.label}"
-                    </span>
-                  )}
-                </p>
-                <span className="text-xs text-gray-400">{atividades.length} registro(s)</span>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {porObra.map(o => (
+                <div key={o.id} className={clsx(
+                  'rounded-2xl border bg-white p-5 shadow-sm',
+                  o.presentes > 0 ? 'border-blue-100' : 'border-gray-100'
+                )}>
+                  {/* Obra header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Building2 className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{o.nome}</p>
+                        <p className="text-xs text-gray-400">{o.status}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-blue-600">{o.presentes}</p>
+                      <p className="text-xs text-gray-400">presentes</p>
+                    </div>
+                  </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b text-xs text-gray-500 uppercase tracking-wider">
-                    <tr>
-                      {['Atividade', 'Obra', 'Área', 'Prazo', '% Exec', 'Status', 'Ações'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {atividades.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
-                          <HardHat className="h-10 w-10 mx-auto mb-2 text-gray-200" />
-                          <p>Nenhuma atividade encontrada para este empreiteiro</p>
-                        </td>
-                      </tr>
-                    ) : atividades.map(a => {
-                      const atrasada = isAtrasada(a)
-                      const s = statusConfig[a.status] ?? { label: a.status, cls: 'badge-cinza' }
-                      const obraNome = (a as any).obras?.nome ?? '—'
-
-                      return (
-                        <tr
-                          key={a.id}
-                          className={clsx(
-                            'hover:bg-slate-50 transition-colors',
-                            atrasada && 'bg-red-50/60 hover:bg-red-50',
-                          )}
-                        >
-                          {/* Atividade */}
-                          <td className="px-4 py-3 max-w-[220px]">
+                  {/* Empreiteiros com efetivo */}
+                  {o.regs.length > 0 ? (
+                    <div className="space-y-2">
+                      {o.regs.map((reg: any) => {
+                        const pres = (reg.efetivo_colaboradores ?? []).filter((c: any) => c.presente).length
+                        const total = (reg.efetivo_colaboradores ?? []).length
+                        return (
+                          <div key={reg.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
                             <div className="flex items-center gap-2">
-                              {atrasada && (
-                                <span title="Atrasada">
-                                  <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                                </span>
-                              )}
-                              <span className="font-medium text-gray-900 truncate">{a.nome}</span>
-                            </div>
-                            {atrasada && (
-                              <span className="ml-5 inline-flex items-center gap-0.5 text-[10px] font-medium text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full mt-0.5">
-                                <AlertTriangle className="h-2.5 w-2.5" />
-                                Atrasada
+                              <HardHat className="h-3.5 w-3.5 text-gray-400" />
+                              <span className="text-xs text-gray-700 font-medium">
+                                {reg.empreiteiros?.razao_social ?? '—'}
                               </span>
-                            )}
-                          </td>
-
-                          {/* Obra */}
-                          <td className="px-4 py-3 text-gray-600 whitespace-nowrap max-w-[160px] truncate">
-                            {obraNome}
-                          </td>
-
-                          {/* Área */}
-                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                            {a.local || '—'}
-                          </td>
-
-                          {/* Prazo */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span
-                              className={clsx(
-                                'text-sm',
-                                atrasada ? 'text-red-600 font-semibold' : 'text-gray-500',
-                              )}
-                            >
-                              {fmtDate(a.data_fim_prev)}
-                            </span>
-                          </td>
-
-                          {/* % Exec */}
-                          <td className="px-4 py-3">
-                            <ProgressBar pct={Number(a.percentual_exec)} />
-                          </td>
-
-                          {/* Status badge */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={s.cls}>{s.label}</span>
-                          </td>
-
-                          {/* Ações — dropdown inline */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              {atualizando === a.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                              ) : (
-                                <select
-                                  value={a.status}
-                                  onChange={e =>
-                                    handleAtualizarStatus(a.id, e.target.value as StatusAtividade)
-                                  }
-                                  className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer"
-                                  title="Atualizar status"
-                                >
-                                  {STATUS_OPTIONS.map(opt => (
-                                    <option key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              )}
                             </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-20 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-blue-500 h-1.5 rounded-full"
+                                  style={{ width: total > 0 ? `${(pres / total) * 100}%` : '0%' }} />
+                              </div>
+                              <span className="text-xs font-semibold text-gray-700 w-12 text-right">
+                                {pres}/{total}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">Sem efetivo registrado hoje</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
+
+          {/* Todos os empreiteiros */}
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <HardHat className="h-4 w-4 text-amber-500" /> Empreiteiros cadastrados
+              </h2>
+              <span className="text-xs text-gray-400">{empreiteiros.length} ativo{empreiteiros.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {empreiteiros.length === 0 ? (
+                <p className="px-5 py-6 text-sm text-gray-400 text-center">Nenhum empreiteiro cadastrado.</p>
+              ) : empreiteiros.map(emp => {
+                const temEfetivo = efetivos.some(e => e.empreiteiro_id === emp.id)
+                const presHoje = efetivos
+                  .filter(e => e.empreiteiro_id === emp.id)
+                  .reduce((s, e) => s + (e.efetivo_colaboradores ?? []).filter((c: any) => c.presente).length, 0)
+                return (
+                  <div key={emp.id} className="flex items-center justify-between px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <span className="text-xs font-bold text-amber-700">
+                          {emp.razao_social.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-800">{emp.razao_social}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {temEfetivo ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-1">
+                          <CheckCircle2 className="h-3 w-3" /> {presHoje} hoje
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-100 rounded-full px-2.5 py-1">
+                          <Clock className="h-3 w-3" /> Sem registro
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </>
       )}
     </div>

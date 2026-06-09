@@ -50,13 +50,18 @@ const STATUS_LABEL: Record<StatusDesvio, string> = {
   sem_prazo:   'Sem prazo',
 }
 const STATUS_COLOR: Record<StatusDesvio, string> = {
-  adiantada:    'bg-emerald-900/40 text-emerald-300 border-emerald-700/40',
-  no_prazo:     'bg-blue-900/40   text-blue-300   border-blue-700/40',
-  em_risco:     'bg-yellow-900/40 text-yellow-300  border-yellow-700/40',
-  atrasada:     'bg-red-900/40    text-red-300     border-red-700/40',
-  nao_iniciada: 'bg-white     text-gray-500   border-gray-300',
-  concluida:    'bg-teal-900/40   text-teal-300    border-teal-700/40',
-  sem_prazo:    'bg-white     text-gray-400   border-gray-200',
+  adiantada:    'bg-emerald-100 text-emerald-700 border-emerald-300',
+  no_prazo:     'bg-blue-100    text-blue-700    border-blue-300',
+  em_risco:     'bg-amber-100   text-amber-700   border-amber-300',
+  atrasada:     'bg-red-100     text-red-700     border-red-300',
+  nao_iniciada: 'bg-gray-100    text-gray-500    border-gray-300',
+  concluida:    'bg-teal-100    text-teal-700    border-teal-300',
+  sem_prazo:    'bg-gray-50     text-gray-400    border-gray-200',
+}
+
+const PRIORIDADE_COLOR: Record<string, string> = {
+  critica: 'text-red-600', alta: 'text-orange-500',
+  media: 'text-amber-600', baixa: 'text-gray-400',
 }
 const STATUS_BAR: Record<StatusDesvio, string> = {
   adiantada:    'bg-emerald-500',
@@ -66,11 +71,6 @@ const STATUS_BAR: Record<StatusDesvio, string> = {
   nao_iniciada: 'bg-gray-200',
   concluida:    'bg-teal-500',
   sem_prazo:    'bg-gray-200',
-}
-
-const PRIORIDADE_COLOR: Record<string, string> = {
-  critica: 'text-red-400', alta: 'text-orange-400',
-  media: 'text-yellow-400', baixa: 'text-gray-500',
 }
 
 function ProgressDual({ exec, planejado }: { exec: number; planejado: number | null }) {
@@ -103,7 +103,7 @@ function KpiMini({ label, value, icon: Icon, color, sub }: any) {
         <Icon className="h-4 w-4 text-white" />
       </div>
       <div>
-        <p className="text-xl font-bold text-white">{value}</p>
+        <p className="text-xl font-bold text-gray-900">{value}</p>
         <p className="text-xs text-gray-500">{label}</p>
         {sub && <p className="text-xs text-gray-400">{sub}</p>}
       </div>

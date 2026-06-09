@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useAuth } from '@/contexts/auth'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -182,9 +183,9 @@ export default function LoginPage() {
             <div className="mt-6 pt-6 border-t border-gray-100 text-center">
               <p className="text-xs text-gray-400">
                 Empreiteiro?{' '}
-                <a href="/portal/login" className="text-blue-600 hover:underline font-medium">
+                <Link href="/portal/login" className="text-blue-600 hover:underline font-medium">
                   Acessar Portal do Empreiteiro →
-                </a>
+                </Link>
               </p>
             </div>
           </div>

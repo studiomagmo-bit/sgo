@@ -40,8 +40,20 @@ export const obras = {
   },
   criar: async (d: any) => {
     const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('obras').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    // INSERT sem .select() para evitar erro de RLS no SELECT pós-insert
+    const { error: insertErr } = await supabase
+      .from('obras').insert({ ...d, construtora_id })
+    if (insertErr) throw insertErr
+    // Busca a obra recém-criada pela combinação nome + construtora
+    const { data, error } = await supabase
+      .from('obras')
+      .select('*')
+      .eq('construtora_id', construtora_id)
+      .eq('nome', d.nome)
+      .order('criado_em', { ascending: false })
+      .limit(1)
+      .single()
+    if (error) return { nome: d.nome, construtora_id }  // fallback silencioso
     return data
   },
   atualizar: async (id: string, d: any) => {

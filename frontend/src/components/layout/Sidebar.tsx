@@ -27,7 +27,7 @@ const nav = [
   { divider: 'Comercial' },
   { label: 'Empreiteiros',     icon: HardHat,         href: '/empreiteiros' },
   { label: 'Colaboradores',    icon: UserRound,       href: '/colaboradores' },
-  { label: 'Portal Empreiteiro', icon: LayoutGrid,    href: '/empreiteiro-portal' },
+  { label: 'Efetivo Geral',    icon: Users,           href: '/empreiteiro-portal' },
   { label: 'Medições',         icon: DollarSign,      href: '/medicoes' },
   { divider: 'Registros' },
   { label: 'Diário de Obra',   icon: BookOpen,        href: '/diario' },
