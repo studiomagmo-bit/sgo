@@ -1,10 +1,26 @@
 import { supabase } from './supabase'
 
 // Helper: retorna construtora_id do usuário logado
+// Usa o perfil cacheado no localStorage (carregado no login) para evitar
+// query extra que pode falhar por RLS e retornar null
 async function getConstrutoraId(): Promise<string | null> {
+  // 1. Tenta cache (mais rápido e confiável)
+  try {
+    const cached = localStorage.getItem('sgo_user')
+    if (cached) {
+      const u = JSON.parse(cached)
+      if (u?.construtora_id) return u.construtora_id
+    }
+  } catch {}
+
+  // 2. Fallback: consulta direta ao banco
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data } = await supabase.from('usuarios').select('construtora_id').eq('id', user.id).single()
+  const { data } = await supabase
+    .from('usuarios')
+    .select('construtora_id')
+    .eq('id', user.id)
+    .single()
   return data?.construtora_id ?? null
 }
 
