@@ -16,6 +16,8 @@ import {
   Wrench,
   ChevronDown,
   ChevronRight,
+  X,
+  CopyCheck,
 } from 'lucide-react'
 import { estruturaObra, obras } from '@/lib/sgoApi'
 import type { EstruturaObra, TipoEstrutura, Obra } from '@/types'
@@ -91,19 +93,74 @@ function buildTree(
     .map((n) => ({ ...n, filhos: buildTree(nodes, n.id) }))
 }
 
+// ─── Sub-item type ─────────────────────────────────────────────────────────────
+
+interface SubItem {
+  tipo: TipoEstrutura
+  nome: string
+}
+
+// ─── Função replicar para irmãos ──────────────────────────────────────────────
+
+async function replicarParaIrmaos(
+  no: EstruturaObra,
+  todos: EstruturaObra[]
+): Promise<{ count: number; irmaos: number }> {
+  const irmaos = todos.filter(
+    (n) => (n.parent_id ?? null) === (no.parent_id ?? null) && n.id !== no.id
+  )
+  const filhos = todos.filter((n) => n.parent_id === no.id)
+
+  if (irmaos.length === 0 || filhos.length === 0) {
+    throw new Error('Nenhum irmão ou filho encontrado.')
+  }
+
+  let count = 0
+  for (const irmao of irmaos) {
+    for (const filho of filhos) {
+      await estruturaObra.criar({
+        obra_id: no.obra_id,
+        parent_id: irmao.id,
+        tipo: filho.tipo,
+        nome: filho.nome,
+        codigo: filho.codigo ?? null,
+        area: filho.area ?? null,
+        ordem: filho.ordem,
+      })
+      count++
+    }
+  }
+
+  return { count, irmaos: irmaos.length }
+}
+
 // ─── Componente de nó ──────────────────────────────────────────────────────────
 
 interface NoEstruturaProps {
   no: EstruturaObra
   nivel: number
+  todos: EstruturaObra[]
   onAddFilho: (parentId: string) => void
   onDelete: (id: string, nome: string) => void
+  onReplicar: (no: EstruturaObra) => void
 }
 
-function NoEstrutura({ no, nivel, onAddFilho, onDelete }: NoEstruturaProps) {
+function NoEstrutura({
+  no,
+  nivel,
+  todos,
+  onAddFilho,
+  onDelete,
+  onReplicar,
+}: NoEstruturaProps) {
   const [expandido, setExpandido] = useState(true)
   const cfg = TIPO_CONFIG[no.tipo]
   const temFilhos = (no.filhos?.length ?? 0) > 0
+
+  // Verifica se o nó tem irmãos (mesmo parent_id, id diferente)
+  const temIrmaos = todos.some(
+    (n) => (n.parent_id ?? null) === (no.parent_id ?? null) && n.id !== no.id
+  )
 
   return (
     <div className={nivel > 0 ? 'ml-6' : ''}>
@@ -152,6 +209,17 @@ function NoEstrutura({ no, nivel, onAddFilho, onDelete }: NoEstruturaProps) {
 
         {/* Ações */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Botão replicar para irmãos — só aparece se tem filhos E tem irmãos */}
+          {temFilhos && temIrmaos && (
+            <button
+              onClick={() => onReplicar(no)}
+              title="Replicar estrutura para irmãos"
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800 transition-colors"
+            >
+              <CopyCheck className="w-3 h-3" />
+              Replicar
+            </button>
+          )}
           <button
             onClick={() => onAddFilho(no.id)}
             title="Adicionar filho"
@@ -181,8 +249,10 @@ function NoEstrutura({ no, nivel, onAddFilho, onDelete }: NoEstruturaProps) {
                 key={filho.id}
                 no={filho}
                 nivel={nivel + 1}
+                todos={todos}
                 onAddFilho={onAddFilho}
                 onDelete={onDelete}
+                onReplicar={onReplicar}
               />
             ))}
           </div>
@@ -218,6 +288,28 @@ function ModalAdicionar({
   const [emLote, setEmLote] = useState(false)
   const [quantidade, setQuantidade] = useState(2)
   const [salvando, setSalvando] = useState(false)
+  const [progressoLote, setProgressoLote] = useState<string | null>(null)
+
+  // Sub-itens (pavimentos de cada unidade no lote)
+  const [subItems, setSubItems] = useState<SubItem[]>([])
+
+  function addSubItem() {
+    setSubItems((prev) => [...prev, { tipo: 'pavimento', nome: '' }])
+  }
+
+  function removeSubItem(i: number) {
+    setSubItems((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
+  function updateSubItem(i: number, field: keyof SubItem, value: string) {
+    setSubItems((prev) =>
+      prev.map((item, idx) =>
+        idx === i ? { ...item, [field]: value } : item
+      )
+    )
+  }
+
+  const subItemsValidos = subItems.filter((s) => s.nome.trim())
 
   async function handleSalvar() {
     if (!nome.trim()) {
@@ -225,13 +317,17 @@ function ModalAdicionar({
       return
     }
     setSalvando(true)
+    setProgressoLote(null)
     try {
       if (emLote && quantidade >= 2) {
-        // Geração em lote com zero-padding
+        // Geração em lote em SÉRIE para evitar sobrecarga
         const digits = quantidade.toString().length > 2 ? quantidade.toString().length : 2
-        const promises = Array.from({ length: quantidade }, (_, i) => {
+        for (let i = 0; i < quantidade; i++) {
           const num = String(i + 1).padStart(digits, '0')
-          return estruturaObra.criar({
+          setProgressoLote(`Criando ${nome.trim()} ${num} (${i + 1}/${quantidade})…`)
+
+          // 1. Cria o nó da unidade → obtém o ID
+          const unidade = await estruturaObra.criar({
             obra_id: obraId,
             parent_id: parentId ?? null,
             tipo,
@@ -240,9 +336,27 @@ function ModalAdicionar({
             area: area ? parseFloat(area) : null,
             ordem: i,
           })
-        })
-        await Promise.all(promises)
-        toast.success(`${quantidade} nós criados com sucesso!`)
+
+          // 2. Cria cada sub-item com parent_id = ID da unidade
+          for (let j = 0; j < subItems.length; j++) {
+            if (!subItems[j].nome.trim()) continue
+            await estruturaObra.criar({
+              obra_id: obraId,
+              parent_id: unidade.id,
+              tipo: subItems[j].tipo,
+              nome: subItems[j].nome.trim(),
+              ordem: j,
+            })
+          }
+        }
+
+        if (subItemsValidos.length > 0) {
+          toast.success(
+            `${quantidade} unidades criadas com ${subItemsValidos.length} sub-item(ns) cada!`
+          )
+        } else {
+          toast.success(`${quantidade} nós criados com sucesso!`)
+        }
       } else {
         await estruturaObra.criar({
           obra_id: obraId,
@@ -260,14 +374,15 @@ function ModalAdicionar({
       toast.error(err?.message ?? 'Erro ao salvar nó.')
     } finally {
       setSalvando(false)
+      setProgressoLote(null)
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Adicionar Nó</h2>
             {parentNome && (
@@ -287,8 +402,8 @@ function ModalAdicionar({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-5 space-y-4">
+        {/* Body — rolável */}
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Tipo */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -366,39 +481,135 @@ function ModalAdicionar({
           </div>
 
           {/* Geração em lote */}
-          <div className="border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={emLote}
-                onChange={(e) => setEmLote(e.target.checked)}
-                className="w-4 h-4 accent-blue-600"
-              />
-              <span className="text-sm font-medium text-gray-700">Gerar em lote</span>
-              <span className="text-xs text-gray-500">
-                — cria múltiplos nós numerados automaticamente
-              </span>
-            </label>
-            {emLote && (
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quantidade
-                </label>
+          <div className="border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50 space-y-3">
+            {/* Checkbox + quantidade */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
-                  type="number"
-                  value={quantidade}
-                  onChange={(e) => setQuantidade(Math.max(2, parseInt(e.target.value) || 2))}
-                  min={2}
-                  max={999}
-                  className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="checkbox"
+                  checked={emLote}
+                  onChange={(e) => setEmLote(e.target.checked)}
+                  className="w-4 h-4 accent-blue-600"
                 />
+                <span className="text-sm font-medium text-gray-700">Gerar em lote</span>
+              </label>
+              {emLote && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Quantidade:</span>
+                  <input
+                    type="number"
+                    value={quantidade}
+                    onChange={(e) =>
+                      setQuantidade(Math.max(2, parseInt(e.target.value) || 2))
+                    }
+                    min={2}
+                    max={999}
+                    className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+              {!emLote && (
+                <span className="text-xs text-gray-500">
+                  — cria múltiplos nós numerados automaticamente
+                </span>
+              )}
+            </div>
+
+            {/* Sub-itens — só aparecem quando emLote = true */}
+            {emLote && (
+              <div className="border-t border-gray-200 pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    Sub-itens (adicionados a cada unidade gerada)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={addSubItem}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Adicionar sub-item
+                  </button>
+                </div>
+
+                {subItems.length === 0 && (
+                  <p className="text-xs text-gray-400 italic">
+                    Nenhum sub-item configurado. As unidades serão criadas sem filhos.
+                  </p>
+                )}
+
+                {subItems.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="h-px bg-gray-200" />
+                    {subItems.map((sub, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        {/* Select de tipo */}
+                        <select
+                          value={sub.tipo}
+                          onChange={(e) =>
+                            updateSubItem(i, 'tipo', e.target.value as TipoEstrutura)
+                          }
+                          className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          {TIPOS_ORDENADOS.map((t) => (
+                            <option key={t} value={t}>
+                              {TIPO_CONFIG[t].label}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Input de nome */}
+                        <input
+                          type="text"
+                          value={sub.nome}
+                          onChange={(e) => updateSubItem(i, 'nome', e.target.value)}
+                          placeholder="Nome do sub-item"
+                          className="flex-1 border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+
+                        {/* Botão remover */}
+                        <button
+                          type="button"
+                          onClick={() => removeSubItem(i)}
+                          className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          title="Remover sub-item"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Resumo */}
+                {subItemsValidos.length > 0 && nome.trim() && (
+                  <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mt-1">
+                    Serão criados{' '}
+                    <strong>
+                      {quantidade} × (1 unidade + {subItemsValidos.length} sub-item
+                      {subItemsValidos.length > 1 ? 'ns' : ''})
+                    </strong>{' '}
+                    ={' '}
+                    <strong>
+                      {quantidade * (1 + subItemsValidos.length)} nós no total
+                    </strong>
+                  </p>
+                )}
               </div>
             )}
           </div>
+
+          {/* Progresso durante criação em lote */}
+          {progressoLote && (
+            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+              {progressoLote}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
+        <div className="flex justify-end gap-3 p-5 border-t border-gray-100 flex-shrink-0">
           <button
             onClick={onClose}
             disabled={salvando}
@@ -419,7 +630,11 @@ function ModalAdicionar({
             ) : (
               <>
                 <Plus className="w-4 h-4" />
-                {emLote ? `Criar ${quantidade} nós` : 'Adicionar'}
+                {emLote
+                  ? subItemsValidos.length > 0
+                    ? `Criar ${quantidade * (1 + subItemsValidos.length)} nós`
+                    : `Criar ${quantidade} nós`
+                  : 'Adicionar'}
               </>
             )}
           </button>
@@ -522,6 +737,33 @@ function EstruturaObraPageInner() {
     }
   }
 
+  async function handleReplicar(no: EstruturaObra) {
+    const filhosCount = nos.filter((n) => n.parent_id === no.id).length
+    const irmaosCount = nos.filter(
+      (n) => (n.parent_id ?? null) === (no.parent_id ?? null) && n.id !== no.id
+    ).length
+
+    if (filhosCount === 0 || irmaosCount === 0) {
+      toast.error('Nenhum irmão ou filho encontrado.')
+      return
+    }
+
+    const confirmar = window.confirm(
+      `Copiar a estrutura de "${no.nome}" para todos os irmãos?\n\n` +
+        `• ${filhosCount} sub-item(ns) serão replicados para ${irmaosCount} irmão(s)\n` +
+        `• Os filhos existentes NÃO serão removidos.`
+    )
+    if (!confirmar) return
+
+    try {
+      const { count, irmaos } = await replicarParaIrmaos(no, nos)
+      toast.success(`${count} sub-item(ns) replicado(s) para ${irmaos} irmão(s)!`)
+      carregar()
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Erro ao replicar estrutura.')
+    }
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (carregando) {
@@ -615,8 +857,10 @@ function EstruturaObraPageInner() {
                 key={no.id}
                 no={no}
                 nivel={0}
+                todos={nos}
                 onAddFilho={abrirModalFilho}
                 onDelete={handleDelete}
+                onReplicar={handleReplicar}
               />
             ))}
           </div>
