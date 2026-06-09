@@ -1,0 +1,1 @@
+O Dashboard Executivo exibe uma visão consolidada de todas as obras, com métricas como Obras Ativas, Efetivo Hoje, Impedimentos, Inspeções Pendentes, Pendências Abertas, % Médio Execução, Total de Obras e Inspeções Aprovadas. Atualmente, não há obras registradas na seção "Obras".

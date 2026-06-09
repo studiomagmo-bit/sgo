@@ -54,30 +54,30 @@ const STATUS_COLOR: Record<StatusDesvio, string> = {
   no_prazo:     'bg-blue-900/40   text-blue-300   border-blue-700/40',
   em_risco:     'bg-yellow-900/40 text-yellow-300  border-yellow-700/40',
   atrasada:     'bg-red-900/40    text-red-300     border-red-700/40',
-  nao_iniciada: 'bg-slate-800     text-slate-400   border-slate-600',
+  nao_iniciada: 'bg-white     text-gray-500   border-gray-300',
   concluida:    'bg-teal-900/40   text-teal-300    border-teal-700/40',
-  sem_prazo:    'bg-slate-800     text-slate-500   border-slate-700',
+  sem_prazo:    'bg-white     text-gray-400   border-gray-200',
 }
 const STATUS_BAR: Record<StatusDesvio, string> = {
   adiantada:    'bg-emerald-500',
   no_prazo:     'bg-blue-500',
   em_risco:     'bg-yellow-500',
   atrasada:     'bg-red-500',
-  nao_iniciada: 'bg-slate-600',
+  nao_iniciada: 'bg-gray-200',
   concluida:    'bg-teal-500',
-  sem_prazo:    'bg-slate-600',
+  sem_prazo:    'bg-gray-200',
 }
 
 const PRIORIDADE_COLOR: Record<string, string> = {
   critica: 'text-red-400', alta: 'text-orange-400',
-  media: 'text-yellow-400', baixa: 'text-slate-400',
+  media: 'text-yellow-400', baixa: 'text-gray-500',
 }
 
 function ProgressDual({ exec, planejado }: { exec: number; planejado: number | null }) {
   return (
     <div className="relative w-full">
       {/* Barra de fundo (planejado) */}
-      <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
         {/* Barra real (exec) */}
         <div
           className="h-3 rounded-full bg-blue-500 transition-all relative"
@@ -98,14 +98,14 @@ function ProgressDual({ exec, planejado }: { exec: number; planejado: number | n
 
 function KpiMini({ label, value, icon: Icon, color, sub }: any) {
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 flex items-center gap-3">
+    <div className="rounded-xl border border-gray-200 bg-white/90 p-4 flex items-center gap-3">
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
         <Icon className="h-4 w-4 text-white" />
       </div>
       <div>
         <p className="text-xl font-bold text-white">{value}</p>
-        <p className="text-xs text-slate-400">{label}</p>
-        {sub && <p className="text-xs text-slate-500">{sub}</p>}
+        <p className="text-xs text-gray-500">{label}</p>
+        {sub && <p className="text-xs text-gray-400">{sub}</p>}
       </div>
     </div>
   )
@@ -200,17 +200,17 @@ export default function PcpDashboardPage() {
             <BarChart3 className="h-6 w-6 text-blue-400" />
             Dashboard PCP
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-gray-500 text-sm mt-1">
             Análise de cronograma, desvios e atrasos por atividade
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/dashboard" className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-300 hover:bg-slate-700 transition-colors">
+          <Link href="/dashboard" className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors">
             ← Dashboard Executivo
           </Link>
           <button
             onClick={() => carregar(obraFiltro)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-300 hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Atualizar
           </button>
@@ -225,18 +225,18 @@ export default function PcpDashboardPage() {
 
       {/* Filtro de obra */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 text-sm text-slate-400">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
           <Building2 className="h-4 w-4" /> Obra:
         </div>
         <select
           value={obraFiltro}
           onChange={e => trocarObra(e.target.value)}
-          className="rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+          className="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
         >
           <option value="todas">Todas as obras</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-gray-400">
           {atividadesComDesvio.length} atividades
         </span>
       </div>
@@ -244,53 +244,53 @@ export default function PcpDashboardPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiMini label="Concluídas"       value={kpis.conc}           icon={CheckCircle2}  color="bg-teal-600" />
-        <KpiMini label="Atrasadas"        value={kpis.atrasadas}      icon={TrendingDown}  color={kpis.atrasadas > 0 ? 'bg-red-600' : 'bg-slate-600'} />
-        <KpiMini label="Em Risco"         value={kpis.emRisco}        icon={AlertTriangle} color={kpis.emRisco > 0 ? 'bg-yellow-600' : 'bg-slate-600'} />
+        <KpiMini label="Atrasadas"        value={kpis.atrasadas}      icon={TrendingDown}  color={kpis.atrasadas > 0 ? 'bg-red-600' : 'bg-gray-200'} />
+        <KpiMini label="Em Risco"         value={kpis.emRisco}        icon={AlertTriangle} color={kpis.emRisco > 0 ? 'bg-yellow-600' : 'bg-gray-200'} />
         <KpiMini label="Adiantadas"       value={kpis.adiant}         icon={TrendingUp}    color="bg-emerald-600" />
       </div>
 
       {/* Métricas de desvio */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">% Médio Executado</p>
+        <div className="rounded-xl border border-gray-200 bg-white/90 p-4 text-center">
+          <p className="text-xs text-gray-500 mb-1">% Médio Executado</p>
           <p className="text-4xl font-bold text-blue-400">{kpis.percMedioExec}%</p>
-          <p className="text-xs text-slate-500 mt-1">real / apontado</p>
+          <p className="text-xs text-gray-400 mt-1">real / apontado</p>
         </div>
-        <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">% Médio Planejado</p>
-          <p className="text-4xl font-bold text-slate-300">
+        <div className="rounded-xl border border-gray-200 bg-white/90 p-4 text-center">
+          <p className="text-xs text-gray-500 mb-1">% Médio Planejado</p>
+          <p className="text-4xl font-bold text-gray-700">
             {kpis.percMedioPlan !== null ? `${kpis.percMedioPlan}%` : '—'}
           </p>
-          <p className="text-xs text-slate-500 mt-1">baseado no cronograma</p>
+          <p className="text-xs text-gray-400 mt-1">baseado no cronograma</p>
         </div>
-        <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 text-center">
-          <p className="text-xs text-slate-400 mb-1">Desvio Médio</p>
+        <div className="rounded-xl border border-gray-200 bg-white/90 p-4 text-center">
+          <p className="text-xs text-gray-500 mb-1">Desvio Médio</p>
           <div className="flex items-center justify-center gap-2">
             {kpis.desvioMedio !== null && (
               kpis.desvioMedio > 0
                 ? <ArrowUpRight className="h-6 w-6 text-emerald-400" />
                 : kpis.desvioMedio < 0
                 ? <ArrowDownRight className="h-6 w-6 text-red-400" />
-                : <Minus className="h-6 w-6 text-slate-400" />
+                : <Minus className="h-6 w-6 text-gray-500" />
             )}
             <p className={clsx('text-4xl font-bold',
-              kpis.desvioMedio === null ? 'text-slate-500'
+              kpis.desvioMedio === null ? 'text-gray-400'
               : kpis.desvioMedio > 0   ? 'text-emerald-400'
               : kpis.desvioMedio < 0   ? 'text-red-400'
-              : 'text-slate-300'
+              : 'text-gray-700'
             )}>
               {kpis.desvioMedio !== null
                 ? `${kpis.desvioMedio > 0 ? '+' : ''}${kpis.desvioMedio}%`
                 : '—'}
             </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">real − planejado</p>
+          <p className="text-xs text-gray-400 mt-1">real − planejado</p>
         </div>
       </div>
 
       {/* Filtros de status */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="h-4 w-4 text-slate-400 shrink-0" />
+        <Filter className="h-4 w-4 text-gray-500 shrink-0" />
         {(['todos', 'atrasada', 'em_risco', 'no_prazo', 'adiantada', 'concluida', 'nao_iniciada', 'sem_prazo'] as const).map(s => (
           <button
             key={s}
@@ -300,7 +300,7 @@ export default function PcpDashboardPage() {
               statusFiltro === s
                 ? 'bg-blue-600 border-blue-500 text-white'
                 : s === 'todos'
-                ? 'border-slate-600 text-slate-400 hover:border-slate-500'
+                ? 'border-gray-300 text-gray-500 hover:border-slate-500'
                 : clsx(STATUS_COLOR[s as StatusDesvio], 'hover:opacity-80')
             )}
           >
@@ -310,13 +310,13 @@ export default function PcpDashboardPage() {
       </div>
 
       {/* Tabela de atividades */}
-      <div className="rounded-xl border border-slate-700 bg-slate-800/40 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700 bg-slate-800/60">
+      <div className="rounded-xl border border-gray-200 bg-white/60 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white/90">
           <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <GitBranch className="h-4 w-4 text-slate-400" />
+            <GitBranch className="h-4 w-4 text-gray-500" />
             Atividades — {atividadesFiltradas.length} {statusFiltro !== 'todos' ? STATUS_LABEL[statusFiltro as StatusDesvio] : 'total'}
           </h2>
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-4 text-xs text-gray-400">
             <span className="flex items-center gap-1">
               <span className="inline-block w-3 h-2 rounded bg-blue-500" /> Executado
             </span>
@@ -328,7 +328,7 @@ export default function PcpDashboardPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-800/80 text-xs text-slate-500 uppercase tracking-wider">
+            <thead className="bg-white/80 text-xs text-gray-400 uppercase tracking-wider">
               <tr>
                 <th className="text-left px-4 py-3 font-medium">Atividade</th>
                 <th className="text-left px-4 py-3 font-medium">Empreiteiro</th>
@@ -340,10 +340,10 @@ export default function PcpDashboardPage() {
                 <th className="text-center px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <tbody className="divide-y divide-gray-200/50">
               {atividadesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                     {loading ? 'Carregando...' : 'Nenhuma atividade encontrada'}
                   </td>
                 </tr>
@@ -357,7 +357,7 @@ export default function PcpDashboardPage() {
                   <tr
                     key={a.id}
                     className={clsx(
-                      'hover:bg-slate-700/30 transition-colors',
+                      'hover:bg-gray-100/30 transition-colors',
                       a.statusDesvio === 'atrasada' && 'bg-red-900/5',
                       a.statusDesvio === 'em_risco'  && 'bg-yellow-900/5',
                     )}
@@ -367,7 +367,7 @@ export default function PcpDashboardPage() {
                       <p className="font-medium text-white text-sm truncate">{a.nome}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {a.estrutura_obra?.nome && (
-                          <span className="text-xs text-slate-500 truncate max-w-[120px]">
+                          <span className="text-xs text-gray-400 truncate max-w-[120px]">
                             {a.estrutura_obra.nome}
                           </span>
                         )}
@@ -382,8 +382,8 @@ export default function PcpDashboardPage() {
                     {/* Empreiteiro */}
                     <td className="px-4 py-3">
                       {a.empreiteiros?.razao_social ? (
-                        <span className="flex items-center gap-1 text-xs text-slate-300">
-                          <HardHat className="h-3 w-3 text-slate-500 shrink-0" />
+                        <span className="flex items-center gap-1 text-xs text-gray-700">
+                          <HardHat className="h-3 w-3 text-gray-400 shrink-0" />
                           {a.empreiteiros.razao_social}
                         </span>
                       ) : (
@@ -395,12 +395,12 @@ export default function PcpDashboardPage() {
                     <td className="px-4 py-3">
                       {a.data_fim_prev ? (
                         <div>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-gray-500">
                             {new Date(a.data_fim_prev + 'T12:00:00').toLocaleDateString('pt-BR')}
                           </p>
                           {a.statusDesvio !== 'concluida' && diasFim !== null && (
                             <p className={clsx('text-xs font-medium',
-                              diasFim < 0 ? 'text-red-400' : diasFim < 7 ? 'text-yellow-400' : 'text-slate-500'
+                              diasFim < 0 ? 'text-red-400' : diasFim < 7 ? 'text-yellow-400' : 'text-gray-400'
                             )}>
                               {diasFim < 0 ? `${Math.abs(diasFim)}d atrasado` : diasFim === 0 ? 'Hoje!' : `${diasFim}d`}
                             </p>
@@ -423,7 +423,7 @@ export default function PcpDashboardPage() {
 
                     {/* % Planejado */}
                     <td className="px-4 py-3 text-center">
-                      <span className="text-slate-400 text-sm">
+                      <span className="text-gray-500 text-sm">
                         {a.planejado !== null ? `${a.planejado}%` : '—'}
                       </span>
                     </td>
@@ -432,7 +432,7 @@ export default function PcpDashboardPage() {
                     <td className="px-4 py-3 text-center">
                       {a.desvio !== null ? (
                         <span className={clsx('font-bold text-sm flex items-center justify-center gap-0.5',
-                          a.desvio > 0 ? 'text-emerald-400' : a.desvio < 0 ? 'text-red-400' : 'text-slate-400'
+                          a.desvio > 0 ? 'text-emerald-400' : a.desvio < 0 ? 'text-red-400' : 'text-gray-500'
                         )}>
                           {a.desvio > 0 ? <ArrowUpRight className="h-3.5 w-3.5" />
                             : a.desvio < 0 ? <ArrowDownRight className="h-3.5 w-3.5" />
@@ -462,7 +462,7 @@ export default function PcpDashboardPage() {
 
         {/* Rodapé: resumo */}
         {atividadesFiltradas.length > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-700 bg-slate-800/60">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-white/90">
             <div className="flex gap-4 text-xs">
               {(['atrasada', 'em_risco', 'no_prazo', 'adiantada', 'concluida'] as StatusDesvio[]).map(s => (
                 contPorStatus[s] > 0 && (

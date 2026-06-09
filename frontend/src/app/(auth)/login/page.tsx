@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Building2, Loader2, Lock, Mail, HardHat, Users, Eye, EyeOff } from 'lucide-react'
+import { Building2, Loader2, Lock, User, HardHat, Users, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const router = useRouter()
-  const [email, setEmail]       = useState('')
+  const [login_input, setLoginInput] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -17,7 +18,21 @@ export default function LoginPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const perfil = await login(email, password)
+      let emailToUse = login_input.trim()
+
+      // Se não parece email, trata como username e busca o email interno
+      if (!emailToUse.includes('@')) {
+        const { data: emailFound, error: rpcErr } = await supabase
+          .rpc('buscar_email_por_username', { p_username: emailToUse })
+        if (rpcErr || !emailFound) {
+          toast.error('Usuário não encontrado. Verifique o nome de usuário.')
+          setSubmitting(false)
+          return
+        }
+        emailToUse = emailFound
+      }
+
+      const perfil = await login(emailToUse, password)
       if (perfil?.perfil_sistema === 'superadmin') {
         router.replace('/admin')
       } else {
@@ -26,9 +41,9 @@ export default function LoginPage() {
     } catch (err: any) {
       const msg = err?.message || ''
       if (msg.includes('Invalid login') || msg.includes('invalid credentials')) {
-        toast.error('E-mail ou senha incorretos.')
+        toast.error('Usuário ou senha incorretos.')
       } else if (msg.includes('Email not confirmed')) {
-        toast.error('Confirme seu e-mail antes de acessar.')
+        toast.error('Conta pendente de confirmação. Fale com o administrador.')
       } else {
         toast.error(msg || 'Erro ao fazer login.')
       }
@@ -36,6 +51,8 @@ export default function LoginPage() {
       setSubmitting(false)
     }
   }
+
+  const isUsername = login_input.length > 0 && !login_input.includes('@')
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
@@ -48,7 +65,7 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-4xl flex rounded-3xl overflow-hidden shadow-2xl">
 
-        {/* Painel esquerdo — info */}
+        {/* Painel esquerdo */}
         <div className="hidden md:flex flex-col justify-between w-1/2 bg-white/10 backdrop-blur-sm p-10 text-white">
           <div>
             <div className="flex items-center gap-3 mb-10">
@@ -68,12 +85,11 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Roles info */}
           <div className="space-y-3">
             {[
-              { icon: Users,    label: 'Gestor',      desc: 'Visualiza e gerencia todas as obras' },
-              { icon: Building2,label: 'Engenheiro',  desc: 'Gerencia sua obra e empreiteiros' },
-              { icon: HardHat,  label: 'Empreiteiro', desc: 'Portal próprio — /portal/login' },
+              { icon: Users,     label: 'Gestor',      desc: 'Login com e-mail · Acessa todas as obras' },
+              { icon: Building2, label: 'Engenheiro',  desc: 'Login com usuário · Gerencia sua obra' },
+              { icon: HardHat,   label: 'Empreiteiro', desc: 'Portal próprio — /portal/login' },
             ].map(r => (
               <div key={r.label} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5">
                 <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
@@ -88,9 +104,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Painel direito — login */}
+        {/* Painel direito — form */}
         <div className="flex-1 bg-white p-10 flex flex-col justify-center">
-          {/* Logo mobile */}
           <div className="flex items-center gap-3 mb-8 md:hidden">
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center">
               <Building2 className="h-5 w-5 text-white" />
@@ -103,24 +118,35 @@ export default function LoginPage() {
 
           <div className="max-w-sm w-full mx-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-1">Bem-vindo de volta</h2>
-            <p className="text-gray-400 text-sm mb-8">Faça login para acessar o sistema</p>
+            <p className="text-gray-400 text-sm mb-8">Use e-mail (gestor) ou nome de usuário (engenheiro)</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email */}
+              {/* E-mail ou Usuário */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {isUsername ? 'Nome de usuário' : 'E-mail ou usuário'}
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    type="text"
+                    value={login_input}
+                    onChange={e => setLoginInput(e.target.value)}
                     required
                     disabled={submitting}
-                    placeholder="seu@email.com"
+                    autoComplete="username"
+                    placeholder="seu@email.com ou nome.usuario"
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-3 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all disabled:opacity-60"
                   />
+                  {isUsername && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5">
+                      USERNAME
+                    </span>
+                  )}
                 </div>
+                {isUsername && (
+                  <p className="text-xs text-blue-500 mt-1">🔑 Entrando como engenheiro/mestre (sem @)</p>
+                )}
               </div>
 
               {/* Senha */}
@@ -134,6 +160,7 @@ export default function LoginPage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     disabled={submitting}
+                    autoComplete="current-password"
                     placeholder="••••••••"
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-9 pr-10 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all disabled:opacity-60"
                   />
@@ -143,7 +170,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Botão */}
               <button
                 type="submit"
                 disabled={submitting}
@@ -157,7 +183,7 @@ export default function LoginPage() {
               <p className="text-xs text-gray-400">
                 Empreiteiro?{' '}
                 <a href="/portal/login" className="text-blue-600 hover:underline font-medium">
-                  Acessar Portal do Empreiteiro
+                  Acessar Portal do Empreiteiro →
                 </a>
               </p>
             </div>

@@ -165,57 +165,57 @@ export default function EfetivoPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Efetivo Diário</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <p className="text-gray-500 text-sm mt-1">
           Registro de presença por colaborador
         </p>
       </div>
 
       {/* Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-gray-200 bg-white/90 p-4">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
+          <label className="block text-xs font-medium text-gray-500 mb-1">
             <Building2 className="inline h-3 w-3 mr-1" />Obra *
           </label>
           <select
             value={obraId}
             onChange={e => setObraId(e.target.value)}
-            className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
           >
             <option value="">Selecionar obra...</option>
             {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
+          <label className="block text-xs font-medium text-gray-500 mb-1">
             <HardHat className="inline h-3 w-3 mr-1" />Empreiteiro *
           </label>
           <select
             value={empreteiroId}
             onChange={e => setEmpreteiroId(e.target.value)}
-            className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
           >
             <option value="">Selecionar empreiteiro...</option>
             {empreiteiros.map(e => <option key={e.id} value={e.id}>{e.razao_social}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
+          <label className="block text-xs font-medium text-gray-500 mb-1">
             <CalendarDays className="inline h-3 w-3 mr-1" />Data *
           </label>
           <input
             type="date"
             value={data}
             onChange={e => setData(e.target.value)}
-            className="w-full rounded-lg bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
           />
         </div>
       </div>
 
       {/* Estado: não selecionado */}
       {(!obraId || !empreteiroId) && (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-10 text-center">
+        <div className="rounded-xl border border-gray-200 bg-white/60 p-10 text-center">
           <Users className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">Selecione uma obra e um empreiteiro para registrar a presença.</p>
+          <p className="text-gray-500 text-sm">Selecione uma obra e um empreiteiro para registrar a presença.</p>
         </div>
       )}
 
@@ -228,7 +228,7 @@ export default function EfetivoPage() {
 
       {/* Loading */}
       {loadingPresenca && obraId && empreteiroId && (
-        <div className="text-slate-400 text-sm animate-pulse flex items-center gap-2">
+        <div className="text-gray-500 text-sm animate-pulse flex items-center gap-2">
           <RefreshCw className="h-4 w-4 animate-spin" /> Carregando colaboradores...
         </div>
       )}
@@ -240,37 +240,37 @@ export default function EfetivoPage() {
             <div className="rounded-xl border border-emerald-700/40 bg-emerald-900/20 p-4 text-center">
               <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto mb-1" />
               <p className="text-2xl font-bold text-emerald-300">{totalPresentes}</p>
-              <p className="text-xs text-slate-400 mt-0.5">Presentes</p>
+              <p className="text-xs text-gray-500 mt-0.5">Presentes</p>
             </div>
             <div className="rounded-xl border border-red-700/40 bg-red-900/20 p-4 text-center">
               <XCircle className="h-6 w-6 text-red-400 mx-auto mb-1" />
               <p className="text-2xl font-bold text-red-300">{totalAusentes}</p>
-              <p className="text-xs text-slate-400 mt-0.5">Ausentes</p>
+              <p className="text-xs text-gray-500 mt-0.5">Ausentes</p>
             </div>
             <div className="rounded-xl border border-blue-700/40 bg-blue-900/20 p-4 text-center">
               <Clock className="h-6 w-6 text-blue-400 mx-auto mb-1" />
               <p className="text-2xl font-bold text-blue-300">{totalHoras}h</p>
-              <p className="text-xs text-slate-400 mt-0.5">Total de Horas</p>
+              <p className="text-xs text-gray-500 mt-0.5">Total de Horas</p>
             </div>
           </div>
 
           {/* Lista de colaboradores */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800/40 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700 bg-slate-800/60">
+          <div className="rounded-xl border border-gray-200 bg-white/60 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white/90">
               <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Users className="h-4 w-4 text-slate-400" />
+                <Users className="h-4 w-4 text-gray-500" />
                 Registro de Presença — {new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </h2>
-              <span className="text-xs text-slate-400">{presencas.length} colaboradores</span>
+              <span className="text-xs text-gray-500">{presencas.length} colaboradores</span>
             </div>
 
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-gray-200/50">
               {presencas.map(p => (
                 <div
                   key={p.colaborador_id}
                   className={clsx(
                     'px-5 py-4 transition-colors',
-                    p.presente ? 'hover:bg-slate-700/20' : 'bg-red-900/10 hover:bg-red-900/20'
+                    p.presente ? 'hover:bg-gray-100/30' : 'bg-red-900/10 hover:bg-red-900/20'
                   )}
                 >
                   <div className="flex items-start gap-4">
@@ -295,7 +295,7 @@ export default function EfetivoPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-white">{p.nome}</p>
                         {p.funcao && (
-                          <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-300">
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                             {p.funcao}
                           </span>
                         )}
@@ -313,7 +313,7 @@ export default function EfetivoPage() {
                       <div className="mt-2 flex flex-wrap gap-3">
                         {p.presente ? (
                           <div className="flex items-center gap-1.5">
-                            <label className="text-xs text-slate-400">Horas:</label>
+                            <label className="text-xs text-gray-500">Horas:</label>
                             <input
                               type="number"
                               min={0}
@@ -321,17 +321,17 @@ export default function EfetivoPage() {
                               step={0.5}
                               value={p.horas_trabalhadas}
                               onChange={e => atualizarCampo(p.colaborador_id, 'horas_trabalhadas', Number(e.target.value))}
-                              className="w-16 rounded bg-slate-700 border border-slate-600 px-2 py-0.5 text-xs text-white text-center focus:outline-none focus:border-blue-500"
+                              className="w-16 rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-white text-center focus:outline-none focus:border-blue-500"
                             />
-                            <span className="text-xs text-slate-500">h</span>
+                            <span className="text-xs text-gray-400">h</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <label className="text-xs text-slate-400">Motivo:</label>
+                            <label className="text-xs text-gray-500">Motivo:</label>
                             <select
                               value={p.motivo_ausencia}
                               onChange={e => atualizarCampo(p.colaborador_id, 'motivo_ausencia', e.target.value)}
-                              className="rounded bg-slate-700 border border-slate-600 px-2 py-0.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                              className="rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-white focus:outline-none focus:border-blue-500"
                             >
                               <option value="">Selecionar...</option>
                               {MOTIVOS.map(m => (
@@ -345,7 +345,7 @@ export default function EfetivoPage() {
                           value={p.observacao}
                           onChange={e => atualizarCampo(p.colaborador_id, 'observacao', e.target.value)}
                           placeholder="Observação..."
-                          className="flex-1 min-w-[160px] rounded bg-slate-700 border border-slate-600 px-2 py-0.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                          className="flex-1 min-w-[160px] rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -355,8 +355,8 @@ export default function EfetivoPage() {
             </div>
 
             {/* Rodapé: Salvar */}
-            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-700 bg-slate-800/60">
-              <div className="flex gap-3 text-xs text-slate-400">
+            <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-white/90">
+              <div className="flex gap-3 text-xs text-gray-500">
                 <span className="text-emerald-400 font-medium">{totalPresentes} presentes</span>
                 <span>·</span>
                 <span className="text-red-400 font-medium">{totalAusentes} ausentes</span>
@@ -386,11 +386,11 @@ export default function EfetivoPage() {
 
           {/* Não há colaboradores */}
           {presencas.length === 0 && !loadingPresenca && (
-            <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-8 text-center">
+            <div className="rounded-xl border border-gray-200 bg-white/60 p-8 text-center">
               <Users className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-              <p className="text-slate-400 text-sm">Nenhum colaborador ativo cadastrado para este empreiteiro.</p>
-              <p className="text-slate-500 text-xs mt-1">
-                Vá em <strong className="text-slate-400">Colaboradores</strong> para cadastrar os trabalhadores.
+              <p className="text-gray-500 text-sm">Nenhum colaborador ativo cadastrado para este empreiteiro.</p>
+              <p className="text-gray-400 text-xs mt-1">
+                Vá em <strong className="text-gray-500">Colaboradores</strong> para cadastrar os trabalhadores.
               </p>
             </div>
           )}
@@ -399,22 +399,22 @@ export default function EfetivoPage() {
 
       {/* Histórico do dia para a obra */}
       {obraId && data && (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/40 overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-700">
+        <div className="rounded-xl border border-gray-200 bg-white/60 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-white">
               Registros do dia — {new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')}
             </h2>
           </div>
           {loadingHist ? (
-            <p className="px-5 py-4 text-slate-500 text-xs animate-pulse">Carregando...</p>
+            <p className="px-5 py-4 text-gray-400 text-xs animate-pulse">Carregando...</p>
           ) : historico.length === 0 ? (
-            <p className="px-5 py-4 text-slate-500 text-sm">Nenhum registro para este dia.</p>
+            <p className="px-5 py-4 text-gray-400 text-sm">Nenhum registro para este dia.</p>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-gray-200/50">
               {historico.map(h => (
                 <div key={h.id} className="flex items-center justify-between px-5 py-3">
                   <div className="flex items-center gap-3">
-                    <HardHat className="h-4 w-4 text-slate-400" />
+                    <HardHat className="h-4 w-4 text-gray-500" />
                     <span className="text-sm text-white">{h.empreiteiros?.razao_social || '—'}</span>
                   </div>
                   <button

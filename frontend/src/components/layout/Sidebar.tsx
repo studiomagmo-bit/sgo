@@ -16,6 +16,7 @@ const nav = [
   { label: 'Obras',            icon: Building2,       href: '/obras' },
   { divider: 'Planejamento' },
   { label: 'PCP / Atividades', icon: GitBranch,       href: '/pcp' },
+  { label: 'Cronograma Gantt', icon: BarChart3,       href: '/pcp/gantt' },
   { label: 'Efetivo Diário',   icon: Users,           href: '/efetivo' },
   { label: 'Produções',        icon: ClipboardList,   href: '/producoes' },
   { divider: 'Qualidade' },

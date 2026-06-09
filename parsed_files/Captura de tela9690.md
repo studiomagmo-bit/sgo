@@ -1,0 +1,5 @@
+The main language of the text in the image is Portuguese.
+
+The image displays a web application interface, likely a project management system. The left sidebar shows navigation options such as "Dashboard," "Obras" (Works/Projects), "Planejamento" (Planning), "Qualidade" (Quality), "Recursos" (Resources), "Comercial" (Commercial), "Registros" (Records), and "Configurações" (Settings). The main content area shows a list of "Obras," with one project named "TESTE SQL" currently registered. There's also a search bar for "Obras" and a button to add a "Nova Obra" (New Work/Project).
+
+On the right side of the screen, a developer console is open, showing error messages related to loading resources and infinite recursion in a script file, indicating potential issues with the application's backend or data handling, specifically concerning a "usuarios" (users) relation. The console also indicates that DevTools is available in Portuguese.

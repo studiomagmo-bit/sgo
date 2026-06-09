@@ -608,7 +608,7 @@ export const usuariosApi = {
     return data ?? []
   },
 
-  /** Criar novo usuário (auth + registro na tabela usuarios) */
+  /** Criar novo usuário via RPC — sem email, sem rate limit, sem confirmação */
   criar: async (d: {
     nome: string
     username: string
@@ -618,36 +618,23 @@ export const usuariosApi = {
     const construtora_id = await getConstrutoraId()
     if (!construtora_id) throw new Error('Construtora não identificada.')
 
-    // Gera email interno baseado no username (não é exibido ao usuário)
-    const email = `${d.username.toLowerCase().replace(/\s+/g, '_')}@${construtora_id}.sgo.internal`
-
-    // Cria auth user via supabaseSignup (não derruba sessão do gestor)
-    const { data: authData, error: authError } = await supabaseSignup.auth.signUp({
-      email,
-      password: d.senha,
+    // Chama a função criar_usuario_interno() que insere direto em auth.users
+    // com email_confirmed_at = NOW() — sem envio de email, sem rate limit
+    const { data: userId, error } = await supabase.rpc('criar_usuario_interno', {
+      p_nome:           d.nome.trim(),
+      p_username:       d.username.trim(),
+      p_senha:          d.senha,
+      p_perfil:         d.perfil,
+      p_construtora_id: construtora_id,
     })
-    if (authError) throw authError
-    const authUser = authData.user
-    if (!authUser) throw new Error('Falha ao criar usuário de autenticação.')
-
-    // Insere na tabela usuarios
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-    const { data, error } = await supabase
+    if (error) throw new Error(error.message)
+    // Retorna o usuário recém-criado
+    const { data: usuario } = await supabase
       .from('usuarios')
-      .insert({
-        id:             authUser.id,
-        nome:           d.nome,
-        email,
-        username:       d.username,
-        perfil:         d.perfil,
-        construtora_id,
-        criado_por:     currentUser?.id ?? null,
-        ativo:          true,
-      })
-      .select()
+      .select('*')
+      .eq('id', userId)
       .single()
-    if (error) throw error
-    return data
+    return usuario
   },
 
   /** Atualizar dados de um usuário */

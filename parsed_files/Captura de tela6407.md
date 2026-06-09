@@ -1,0 +1,3 @@
+The main language is Portuguese.
+
+The image shows a dashboard for a system called SGO, belonging to Israel Magalhães. The current section displayed is "Empreiteiros" (Contractors), indicating that one contractor is registered. The registered contractor is named MAGMO and is marked as "Ativo" (Active). There is also a button to add a "Novo Empreiteiro" (New Contractor). The left sidebar shows various menu options such as Obras (Works), Planejamento (Planning), Qualidade (Quality), Recursos (Resources), Comercial (Commercial), Registros (Records), and Configurações (Configurations).
