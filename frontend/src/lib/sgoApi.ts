@@ -51,6 +51,45 @@ export const obras = {
   },
 }
 
+// ─── ESTRUTURA DA OBRA ────────────────────────────────────────
+export const estruturaObra = {
+  listar: async (obra_id: string) => {
+    const { data, error } = await supabase
+      .from('estrutura_obra')
+      .select('*')
+      .eq('obra_id', obra_id)
+      .order('ordem')
+    if (error) throw error
+    return data ?? []
+  },
+  criar: async (d: any) => {
+    const { data, error } = await supabase
+      .from('estrutura_obra')
+      .insert(d)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+  atualizar: async (id: string, d: any) => {
+    const { data, error } = await supabase
+      .from('estrutura_obra')
+      .update(d)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+  excluir: async (id: string) => {
+    const { error } = await supabase
+      .from('estrutura_obra')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+}
+
 // ─── ATIVIDADES (PCP) ─────────────────────────────────────────
 export const atividades = {
   listar: async (params?: any) => {

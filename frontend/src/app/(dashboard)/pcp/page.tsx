@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { atividades as pcpAtividades, obras as obrasApi } from '@/lib/sgoApi'
+import { atividades as pcpAtividades, obras as obrasApi, estruturaObra } from '@/lib/sgoApi'
 import type { Atividade, Obra, StatusAtividade, PrioridadeAtividade } from '@/types'
 import { Plus, Filter, Loader2, GitBranch, AlertTriangle, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -26,6 +26,7 @@ const prioridadeConfig: Record<string, { label: string; cls: string }> = {
 interface AtividadeForm {
   nome: string
   obra_id: string
+  estrutura_id: string
   status: StatusAtividade
   prioridade: PrioridadeAtividade
   percentual_exec: number
@@ -37,12 +38,30 @@ interface AtividadeForm {
 const FORM_INICIAL: AtividadeForm = {
   nome: '',
   obra_id: '',
+  estrutura_id: '',
   status: 'planejada',
   prioridade: 'media',
   percentual_exec: 0,
   data_inicio_prev: '',
   data_fim_prev: '',
   descricao: '',
+}
+
+// ─── Helper: monta opções de estrutura com indentação hierárquica ──
+function buildOptions(
+  nodes: any[],
+  parentId: string | null = null,
+  nivel = 0,
+): { id: string; label: string }[] {
+  return nodes
+    .filter(n => (n.parent_id ?? null) === parentId)
+    .flatMap(n => [
+      {
+        id: n.id,
+        label: '  '.repeat(nivel) + (nivel > 0 ? '└ ' : '') + n.nome + ` (${n.tipo})`,
+      },
+      ...buildOptions(nodes, n.id, nivel + 1),
+    ])
 }
 
 // ─── Componente de campo label + input ───────────────────────
@@ -67,9 +86,13 @@ export default function PCPPage() {
   const [filtroStatus, setFiltroStatus] = useState('')
 
   // ── Modal ──
-  const [showModal, setShowModal] = useState(false)
-  const [form, setForm]           = useState<AtividadeForm>(FORM_INICIAL)
-  const [saving, setSaving]       = useState(false)
+  const [showModal, setShowModal]   = useState(false)
+  const [form, setForm]             = useState<AtividadeForm>(FORM_INICIAL)
+  const [saving, setSaving]         = useState(false)
+
+  // ── Estrutura carregada para o modal ──
+  const [estruturaOpcoes, setEstruturaOpcoes]       = useState<{ id: string; label: string }[]>([])
+  const [loadingEstrutura, setLoadingEstrutura]     = useState(false)
 
   // ── Carga inicial ──
   useEffect(() => { obrasApi.listar().then(setObras) }, [])
@@ -84,6 +107,21 @@ export default function PCPPage() {
   }
 
   useEffect(() => { carregarAtividades() }, [obraId, filtroStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Carrega estrutura quando obra_id muda no formulário ──
+  useEffect(() => {
+    if (!form.obra_id) {
+      setEstruturaOpcoes([])
+      return
+    }
+    setLoadingEstrutura(true)
+    setForm(prev => ({ ...prev, estrutura_id: '' }))
+    estruturaObra
+      .listar(form.obra_id)
+      .then(nodes => setEstruturaOpcoes(buildOptions(nodes)))
+      .catch(() => setEstruturaOpcoes([]))
+      .finally(() => setLoadingEstrutura(false))
+  }, [form.obra_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── KPIs ──
   const totais = {
@@ -105,6 +143,7 @@ export default function PCPPage() {
   const fecharModal = () => {
     setShowModal(false)
     setForm(FORM_INICIAL)
+    setEstruturaOpcoes([])
   }
 
   const set = (field: keyof AtividadeForm, value: string | number) =>
@@ -126,6 +165,7 @@ export default function PCPPage() {
         data_inicio_prev: form.data_inicio_prev || null,
         data_fim_prev:    form.data_fim_prev    || null,
         descricao:        form.descricao        || null,
+        estrutura_id:     form.estrutura_id     || null,
         // valores obrigatórios com default
         quantidade_prev: 0,
         quantidade_exec: 0,
@@ -314,6 +354,34 @@ export default function PCPPage() {
                     <option key={o.id} value={o.id}>{o.nome}</option>
                   ))}
                 </select>
+              </Campo>
+
+              {/* Área / Estrutura — aparece após obra ser selecionada */}
+              <Campo label="Área / Estrutura">
+                <div className="relative">
+                  <select
+                    value={form.estrutura_id}
+                    onChange={e => set('estrutura_id', e.target.value)}
+                    disabled={!form.obra_id || loadingEstrutura}
+                    className={clsx(
+                      inputCls,
+                      (!form.obra_id || loadingEstrutura) && 'opacity-60 cursor-not-allowed bg-gray-50',
+                    )}
+                  >
+                    <option value="">— Sem área específica —</option>
+                    {estruturaOpcoes.map(op => (
+                      <option key={op.id} value={op.id}>{op.label}</option>
+                    ))}
+                  </select>
+                  {loadingEstrutura && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                    </div>
+                  )}
+                </div>
+                {!form.obra_id && (
+                  <p className="text-xs text-gray-400 mt-1">Selecione uma obra para ver as áreas disponíveis.</p>
+                )}
               </Campo>
 
               {/* Status + Prioridade lado a lado */}
