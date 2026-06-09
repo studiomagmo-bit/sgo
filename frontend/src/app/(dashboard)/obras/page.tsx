@@ -86,7 +86,7 @@ export default function ObrasPage() {
             return (
               <Link
                 key={obra.id}
-                href={`/obras/${obra.id}`}
+                href={`/obras/detail?id=${obra.id}`}
                 className="block rounded-xl border bg-white p-5 hover:shadow-md transition-shadow"
               >
                 {/* Capa */}

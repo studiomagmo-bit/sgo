@@ -1,17 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-
-// Necessário para output: 'export' com rota dinâmica
-export function generateStaticParams() {
-  return []
-}
+import { useRouter } from 'next/navigation'
 import { obrasApi, dashboardApi } from '@/lib/api'
 import type { Obra, DashboardObra } from '@/types'
 import {
   ArrowLeft, Building2, GitBranch, Users, ClipboardList,
   CheckCircle, AlertTriangle, DollarSign, BookOpen, Loader2,
-  MapPin, Calendar, TrendingUp,
+  MapPin, Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
@@ -37,27 +32,32 @@ function KpiMini({ label, value, color }: { label: string; value: string | numbe
 }
 
 export default function ObraDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const router  = useRouter()
+  const router = useRouter()
+  const [id, setId]           = useState<string | null>(null)
   const [obra, setObra]       = useState<Obra | null>(null)
   const [dash, setDash]       = useState<DashboardObra | null>(null)
   const [tab, setTab]         = useState('visao')
   const [loading, setLoading] = useState(true)
 
+  // Lê o id da query string sem useSearchParams (compatível com output: export)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const obraId = params.get('id')
+    setId(obraId)
+    if (!obraId) { setLoading(false); return }
     Promise.all([
-      obrasApi.detalhar(id),
-      dashboardApi.obra(id),
+      obrasApi.detalhar(obraId),
+      dashboardApi.obra(obraId),
     ]).then(([o, d]) => {
       setObra(o)
       setDash(d)
     }).finally(() => setLoading(false))
-  }, [id])
+  }, [])
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
   }
-  if (!obra) {
+  if (!id || !obra) {
     return <div className="text-center py-16 text-gray-500">Obra não encontrada.</div>
   }
 
@@ -65,7 +65,7 @@ export default function ObraDetailPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500">
-        <button onClick={() => router.back()} className="flex items-center gap-1 hover:text-gray-700">
+        <button onClick={() => router.push('/obras')} className="flex items-center gap-1 hover:text-gray-700">
           <ArrowLeft className="h-4 w-4" /> Obras
         </button>
         <span>/</span>
@@ -92,10 +92,10 @@ export default function ObraDetailPage() {
         {/* KPIs rápidos */}
         {dash && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
-            <KpiMini label="Progresso"          value={`${dash.percentual_geral}%`} color="bg-blue-50 text-blue-800" />
-            <KpiMini label="Atividades"          value={dash.total_atividades}       color="bg-slate-50 text-slate-800" />
-            <KpiMini label="Efetivo Hoje"        value={dash.efetivo_hoje}           color="bg-emerald-50 text-emerald-800" />
-            <KpiMini label="Impedimentos"        value={dash.impedimentos_abertos}   color="bg-orange-50 text-orange-800" />
+            <KpiMini label="Progresso"       value={`${dash.percentual_geral}%`} color="bg-blue-50 text-blue-800" />
+            <KpiMini label="Atividades"      value={dash.total_atividades}       color="bg-slate-50 text-slate-800" />
+            <KpiMini label="Efetivo Hoje"    value={dash.efetivo_hoje}           color="bg-emerald-50 text-emerald-800" />
+            <KpiMini label="Impedimentos"    value={dash.impedimentos_abertos}   color="bg-orange-50 text-orange-800" />
           </div>
         )}
       </div>
@@ -152,18 +152,17 @@ export default function ObraDetailPage() {
             )}
           </div>
         )}
-
         {tab !== 'visao' && (
           <div className="text-center py-12 text-gray-400">
             <div className="text-4xl mb-3">🚧</div>
             <p className="font-medium">Use o menu lateral para acessar este módulo</p>
-            <p className="text-sm mt-1 text-gray-400">Filtre por esta obra nas páginas específicas</p>
+            <p className="text-sm mt-1">Filtre por esta obra nas páginas específicas</p>
             <div className="flex justify-center gap-3 mt-4 flex-wrap">
-              <Link href={`/pcp?obra_id=${obra.id}`}           className="text-sm text-blue-600 hover:underline">PCP / Atividades →</Link>
-              <Link href={`/efetivo?obra_id=${obra.id}`}       className="text-sm text-blue-600 hover:underline">Efetivo →</Link>
-              <Link href={`/inspecoes?obra_id=${obra.id}`}     className="text-sm text-blue-600 hover:underline">Inspeções →</Link>
-              <Link href={`/medicoes?obra_id=${obra.id}`}      className="text-sm text-blue-600 hover:underline">Medições →</Link>
-              <Link href={`/diario?obra_id=${obra.id}`}        className="text-sm text-blue-600 hover:underline">Diário →</Link>
+              <Link href={`/pcp?obra_id=${obra.id}`}       className="text-sm text-blue-600 hover:underline">PCP →</Link>
+              <Link href={`/efetivo?obra_id=${obra.id}`}   className="text-sm text-blue-600 hover:underline">Efetivo →</Link>
+              <Link href={`/inspecoes?obra_id=${obra.id}`} className="text-sm text-blue-600 hover:underline">Inspeções →</Link>
+              <Link href={`/medicoes?obra_id=${obra.id}`}  className="text-sm text-blue-600 hover:underline">Medições →</Link>
+              <Link href={`/diario?obra_id=${obra.id}`}    className="text-sm text-blue-600 hover:underline">Diário →</Link>
             </div>
           </div>
         )}

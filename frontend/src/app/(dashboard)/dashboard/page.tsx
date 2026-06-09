@@ -100,7 +100,7 @@ export default function DashboardPage() {
               ) : obras.map(o => (
                 <tr key={o.obra_id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3">
-                    <Link href={`/obras/${o.obra_id}`} className="font-medium text-blue-600 hover:underline">
+                    <Link href={`/obras/detail?id=${o.obra_id}`} className="font-medium text-blue-600 hover:underline">
                       {o.obra_nome}
                     </Link>
                   </td>
