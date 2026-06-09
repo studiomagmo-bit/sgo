@@ -1,6 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+
+// Necessário para output: 'export' com rota dinâmica
+export function generateStaticParams() {
+  return []
+}
 import { obrasApi, dashboardApi } from '@/lib/api'
 import type { Obra, DashboardObra } from '@/types'
 import {
