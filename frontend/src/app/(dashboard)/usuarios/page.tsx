@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/auth'
 import { usuariosApi, obras as obrasApi } from '@/lib/sgoApi'
 import {
   Plus, Loader2, UserCog, X, Check, Building2, Shield,
@@ -18,6 +19,7 @@ const PERFIS = [
 const FORM_INICIAL = { nome: '', username: '', senha: '', perfil: 'engenheiro' }
 
 export default function UsuariosPage() {
+  const { user: authUser } = useAuth()
   const [usuarios, setUsuarios]       = useState<any[]>([])
   const [obras, setObras]             = useState<any[]>([])
   const [loading, setLoading]         = useState(true)
@@ -228,12 +230,14 @@ export default function UsuariosPage() {
                   >
                     <Link2 className="h-3.5 w-3.5" /> Obras
                   </button>
-                  <button
-                    onClick={() => desativar(u.id, u.nome)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Desativar
-                  </button>
+                  {authUser?.id !== u.id && (
+                    <button
+                      onClick={() => desativar(u.id, u.nome)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Desativar
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -302,6 +306,11 @@ export default function UsuariosPage() {
                   <input
                     type="text"
                     value={form.username}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    name="sgo_username_new"
                     onChange={e => {
                       // Remove @ e espaços automaticamente — impede digitar email no campo
                       const v = e.target.value.toLowerCase().replace(/[@\s]/g, '').replace(/[^a-z0-9._\-]/g, '')

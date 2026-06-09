@@ -232,14 +232,9 @@ export default function DashboardPage() {
             })}
           </div>
           {obras.length === 0 && (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2.5">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800">Sem obras visíveis</p>
-                <p className="text-xs text-amber-700 mt-0.5">
-                  Execute <strong>database/11_fix_gestors_e_usuarios.sql</strong> no Supabase SQL Editor para corrigir seu acesso como Gestor.
-                </p>
-              </div>
+            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-center gap-2.5">
+              <Building2 className="h-4 w-4 text-blue-400 shrink-0" />
+              <p className="text-sm text-blue-700">Nenhuma obra cadastrada ainda. <Link href="/obras" className="font-semibold underline hover:text-blue-900">Criar primeira obra →</Link></p>
             </div>
           )}
         </div>
