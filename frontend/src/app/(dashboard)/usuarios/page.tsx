@@ -49,6 +49,10 @@ export default function UsuariosPage() {
       toast.error('Preencha Nome, Usuário e Senha.')
       return
     }
+    if (form.username.includes('@')) {
+      toast.error('O campo Usuário não aceita @. Digite apenas o nome de usuário (ex: joao.silva)')
+      return
+    }
     if (form.senha.length < 6) {
       toast.error('Senha deve ter pelo menos 6 caracteres.')
       return
@@ -66,7 +70,16 @@ export default function UsuariosPage() {
       setForm(FORM_INICIAL)
       carregarTudo()
     } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao criar usuário.')
+      const msg = err?.message ?? ''
+      if (msg.includes('function') && msg.includes('does not exist')) {
+        toast.error('⚠️ Execute o SQL 11 no Supabase primeiro! (database/11_fix_gestors_e_usuarios.sql)', { duration: 8000 })
+      } else if (msg.includes('já está em uso')) {
+        toast.error(`Usuário "${form.username}" já existe. Escolha outro.`)
+      } else if (msg.includes('Sem permissão')) {
+        toast.error('Sem permissão. Execute o SQL 11 para corrigir seu perfil para administrador.')
+      } else {
+        toast.error(msg || 'Erro ao criar usuário.')
+      }
     } finally {
       setSaving(false)
     }
@@ -289,7 +302,11 @@ export default function UsuariosPage() {
                   <input
                     type="text"
                     value={form.username}
-                    onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
+                    onChange={e => {
+                      // Remove @ e espaços automaticamente — impede digitar email no campo
+                      const v = e.target.value.toLowerCase().replace(/[@\s]/g, '').replace(/[^a-z0-9._\-]/g, '')
+                      setForm(f => ({ ...f, username: v }))
+                    }}
                     placeholder="joao.silva"
                     className="w-full rounded-lg border border-gray-300 pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                   />

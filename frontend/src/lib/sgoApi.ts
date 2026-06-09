@@ -612,12 +612,27 @@ export const portalApi = {
 export const usuariosApi = {
   /** Listar todos usuários da construtora */
   listar: async () => {
+    // Tenta com join; se usuarios_obra não existir ainda (SQL 11 não rodado), cai no fallback
     const { data, error } = await supabase
       .from('usuarios')
-      .select('*, usuarios_obra(obra_id, papel, ativo, obras(nome))')
+      .select('id, nome, email, username, perfil, ativo, criado_em')
       .order('nome')
     if (error) throw error
-    return data ?? []
+    // Busca vínculos de obras separadamente (tolerante a falha)
+    const usuarios = data ?? []
+    try {
+      const { data: vinculos } = await supabase
+        .from('usuarios_obra')
+        .select('usuario_id, obra_id, papel, ativo, obras(id, nome)')
+        .eq('ativo', true)
+      if (vinculos) {
+        return usuarios.map(u => ({
+          ...u,
+          usuarios_obra: vinculos.filter(v => v.usuario_id === u.id),
+        }))
+      }
+    } catch {}
+    return usuarios.map(u => ({ ...u, usuarios_obra: [] }))
   },
 
   /** Criar novo usuário via RPC — sem email, sem rate limit, sem confirmação */
