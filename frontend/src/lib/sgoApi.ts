@@ -435,8 +435,6 @@ export const dashboard = {
 }
 
 // ─── PORTAL DO EMPREITEIRO ────────────────────────────────────
-import { supabaseSignup, supabasePortal } from './supabase'
-
 export const portalApi = {
   /** Cria conta de acesso para empreiteiro sem deslogar o gestor */
   criarAcesso: async (dados: {
