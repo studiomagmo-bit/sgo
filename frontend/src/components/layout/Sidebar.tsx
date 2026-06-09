@@ -6,12 +6,13 @@ import {
   Building2, LayoutDashboard, GitBranch, Users, ClipboardList,
   Wrench, Package, HardHat, CheckCircle, AlertTriangle,
   FileText, DollarSign, Truck, BookOpen, LogOut, ChevronRight,
-  Settings, BarChart3, Shield, UserRound, LayoutGrid,
+  Settings, BarChart3, Shield, UserRound, LayoutGrid, PieChart,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const navItems = [
   { label: 'Dashboard',      icon: LayoutDashboard, href: '/dashboard' },
+  { label: 'Dashboard PCP',  icon: PieChart,        href: '/pcp-dashboard' },
   { label: 'Obras',          icon: Building2,       href: '/obras' },
   { divider: 'Planejamento' },
   { label: 'PCP / Atividades', icon: GitBranch,     href: '/pcp' },

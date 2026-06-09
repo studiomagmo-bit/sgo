@@ -366,6 +366,62 @@ export const equipamentos = {
 
 // ─── DASHBOARD ────────────────────────────────────────────────
 export const dashboard = {
+  /** Dashboard Executivo: busca tudo em paralelo */
+  executivo: async () => {
+    const hoje = new Date().toISOString().split('T')[0]
+    const [
+      { data: obrasList },
+      { data: atividadesList },
+      { data: pendenciasList },
+      { data: inspecoesList },
+      { data: efetivosHoje },
+      { data: empreiteirosList },
+      { data: medicoesList },
+    ] = await Promise.all([
+      supabase.from('obras')
+        .select('id, nome, tipo, status, percentual_geral, data_inicio, data_fim_prev, ativa')
+        .eq('ativa', true)
+        .order('nome'),
+      supabase.from('atividades')
+        .select('id, obra_id, status, percentual_exec, prioridade, data_fim_prev'),
+      supabase.from('pendencias')
+        .select('id, obra_id, status')
+        .in('status', ['criada', 'em_correcao']),
+      supabase.from('inspecoes')
+        .select('id, obra_id, status'),
+      supabase.from('efetivo_diario')
+        .select('id, obra_id, empreiteiro_id')
+        .eq('data', hoje),
+      supabase.from('empreiteiros')
+        .select('id, razao_social, ativo')
+        .eq('ativo', true),
+      supabase.from('medicoes')
+        .select('id, obra_id, status, valor_total'),
+    ])
+    return {
+      obras:          obrasList       ?? [],
+      atividades:     atividadesList  ?? [],
+      pendencias:     pendenciasList  ?? [],
+      inspecoes:      inspecoesList   ?? [],
+      efetivosHoje:   efetivosHoje    ?? [],
+      empreiteiros:   empreiteirosList ?? [],
+      medicoes:       medicoesList    ?? [],
+    }
+  },
+
+  /** Dashboard PCP: atividades com estrutura + empreiteiro para análise de desvio */
+  pcp: async (obra_id?: string) => {
+    let q = supabase
+      .from('atividades')
+      .select('*, empreiteiros(razao_social), estrutura_obra(nome, tipo)')
+      .order('data_inicio_prev', { ascending: true })
+    if (obra_id) q = q.eq('obra_id', obra_id)
+    const { data, error } = await q
+    if (error) throw error
+    return data ?? []
+  },
+
+  /** Legado — mantido para compatibilidade */
   obras: async () => {
     const { data, error } = await supabase
       .from('obras')
