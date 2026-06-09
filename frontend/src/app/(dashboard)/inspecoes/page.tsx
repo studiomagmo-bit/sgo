@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { inspecoes as inspecoesApi, obras as obrasApi } from '@/lib/sgoApi'
-import type { Inspecao, Obra } from '@/types'
-import { Plus, Loader2, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
+import { inspecoes as inspecoesApi, obras as obrasApi, atividades as pcpAtividades } from '@/lib/sgoApi'
+import type { Inspecao, Obra, Atividade } from '@/types'
+import { Plus, Loader2, CheckCircle, Clock, XCircle, AlertCircle, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; cls: string; icon: any }> = {
   aguardando:             { label: 'Aguardando',          cls: 'badge-amarelo', icon: Clock       },
@@ -11,13 +12,32 @@ const statusConfig: Record<string, { label: string; cls: string; icon: any }> = 
   reprovada:              { label: 'Reprovada',           cls: 'badge-vermelho',icon: XCircle     },
 }
 
+const hoje = new Date().toISOString().slice(0, 10)
+
 export default function InspecoesPage() {
+  // ── listagem ─────────────────────────────────────────────────
   const [obras, setObras]           = useState<Obra[]>([])
   const [obraId, setObraId]         = useState('')
   const [inspecoes, setInspecoes]   = useState<Inspecao[]>([])
   const [loading, setLoading]       = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('')
 
+  // ── modal ────────────────────────────────────────────────────
+  const [showModal, setShowModal]         = useState(false)
+  const [saving, setSaving]               = useState(false)
+  const [modalObrasLista, setModalObrasLista] = useState<Obra[]>([])
+  const [atividadesLista, setAtividadesLista] = useState<Atividade[]>([])
+  const [loadingAtiv, setLoadingAtiv]     = useState(false)
+
+  const [form, setForm] = useState({
+    obra_id:          '',
+    atividade_id:     '',
+    data_solicitacao: hoje,
+    observacoes:      '',
+    libera_medicao:   false,
+  })
+
+  // ── efeitos de listagem ──────────────────────────────────────
   useEffect(() => { obrasApi.listar().then(setObras) }, [])
 
   useEffect(() => {
@@ -27,18 +47,78 @@ export default function InspecoesPage() {
       .then(setInspecoes).finally(() => setLoading(false))
   }, [obraId, filtroStatus])
 
+  // ── abrir modal ──────────────────────────────────────────────
+  function abrirModal() {
+    setForm({ obra_id: '', atividade_id: '', data_solicitacao: hoje, observacoes: '', libera_medicao: false })
+    setAtividadesLista([])
+    setModalObrasLista(obras)
+    setShowModal(true)
+  }
+
+  // ── quando obra muda no modal ────────────────────────────────
+  async function handleObraChange(id: string) {
+    setForm(f => ({ ...f, obra_id: id, atividade_id: '' }))
+    if (!id) { setAtividadesLista([]); return }
+    setLoadingAtiv(true)
+    try {
+      const data = await pcpAtividades.listar({ obra_id: id })
+      setAtividadesLista(data as Atividade[])
+    } finally {
+      setLoadingAtiv(false)
+    }
+  }
+
+  // ── submit ───────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.obra_id || !form.atividade_id) {
+      toast.error('Selecione a obra e a atividade.')
+      return
+    }
+    setSaving(true)
+    try {
+      await inspecoesApi.criar({
+        obra_id:          form.obra_id,
+        atividade_id:     form.atividade_id,
+        data_solicitacao: form.data_solicitacao,
+        observacoes:      form.observacoes || null,
+        libera_medicao:   form.libera_medicao,
+        status:           'aguardando',
+      })
+      toast.success('Inspeção criada com sucesso!')
+      setShowModal(false)
+      // recarrega se a obra do modal for a mesma do filtro
+      if (form.obra_id === obraId || !obraId) {
+        setObraId(form.obra_id)
+        setLoading(true)
+        inspecoesApi.listar({ obra_id: form.obra_id, status: filtroStatus || undefined })
+          .then(setInspecoes).finally(() => setLoading(false))
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Erro ao criar inspeção.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── render ───────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      {/* cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inspeções</h1>
           <p className="text-sm text-gray-500 mt-1">Controle de qualidade e aprovações</p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+        <button
+          onClick={abrirModal}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+        >
           <Plus className="h-4 w-4" /> Nova Inspeção
         </button>
       </div>
 
+      {/* filtros */}
       <div className="flex gap-3 flex-wrap">
         <select value={obraId} onChange={e => setObraId(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
@@ -112,6 +192,111 @@ export default function InspecoesPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* ── Modal Nova Inspeção ─────────────────────────────────── */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            {/* header */}
+            <div className="flex items-center justify-between p-5 border-b">
+              <h2 className="text-lg font-semibold">Nova Inspeção</h2>
+              <button onClick={() => setShowModal(false)} aria-label="Fechar">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* form */}
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              {/* Obra */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Obra <span className="text-red-500">*</span></label>
+                <select
+                  value={form.obra_id}
+                  onChange={e => handleObraChange(e.target.value)}
+                  required
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione uma obra...</option>
+                  {modalObrasLista.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+                </select>
+              </div>
+
+              {/* Atividade */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Atividade <span className="text-red-500">*</span></label>
+                <select
+                  value={form.atividade_id}
+                  onChange={e => setForm(f => ({ ...f, atividade_id: e.target.value }))}
+                  required
+                  disabled={!form.obra_id || loadingAtiv}
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="">
+                    {loadingAtiv ? 'Carregando...' : !form.obra_id ? 'Selecione uma obra primeiro' : 'Selecione uma atividade...'}
+                  </option>
+                  {atividadesLista.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                </select>
+              </div>
+
+              {/* Data Solicitação */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data de Solicitação <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  value={form.data_solicitacao}
+                  onChange={e => setForm(f => ({ ...f, data_solicitacao: e.target.value }))}
+                  required
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Observações */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                <textarea
+                  value={form.observacoes}
+                  onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
+                  rows={3}
+                  placeholder="Observações opcionais..."
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              {/* Libera Medição */}
+              <div className="flex items-center gap-3">
+                <input
+                  id="libera_medicao"
+                  type="checkbox"
+                  checked={form.libera_medicao}
+                  onChange={e => setForm(f => ({ ...f, libera_medicao: e.target.checked }))}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="libera_medicao" className="text-sm font-medium text-gray-700">
+                  Libera Medição
+                </label>
+              </div>
+
+              {/* ações */}
+              <div className="flex justify-end gap-3 pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />} Salvar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

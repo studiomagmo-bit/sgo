@@ -28,6 +28,7 @@ const navItems = [
   { divider: 'Registros' },
   { label: 'Diário de Obra', icon: BookOpen,         href: '/diario' },
   { divider: 'Configurações' },
+  { label: 'Configurações', icon: Settings, href: '/configuracoes' },
 ]
 
 export function Sidebar() {
