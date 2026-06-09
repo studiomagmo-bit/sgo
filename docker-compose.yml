@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  # ─── Backend FastAPI ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sgo_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    networks:
+      - sgo_net
+
+  # ─── Frontend Next.js ────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: sgo_frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env.local
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - sgo_net
+
+networks:
+  sgo_net:
+    driver: bridge
