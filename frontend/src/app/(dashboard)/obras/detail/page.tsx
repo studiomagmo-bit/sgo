@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { obras as obrasApi, dashboard as dashboardApi, estruturaObra } from '@/lib/sgoApi'
-import type { Obra, DashboardObra } from '@/types'
+import { obras as obrasApi, estruturaObra } from '@/lib/sgoApi'
+import type { Obra } from '@/types'
 import {
   ArrowLeft, Building2, GitBranch, Users, ClipboardList,
   CheckCircle, AlertTriangle, DollarSign, BookOpen, Loader2,
@@ -53,7 +53,6 @@ export default function ObraDetailPage() {
   const router = useRouter()
   const [id, setId]               = useState<string | null>(null)
   const [obra, setObra]           = useState<Obra | null>(null)
-  const [dash, setDash]           = useState<DashboardObra | null>(null)
   const [tab, setTab]             = useState('visao')
   const [loading, setLoading]     = useState(true)
 
@@ -67,13 +66,9 @@ export default function ObraDetailPage() {
     const obraId = params.get('id')
     setId(obraId)
     if (!obraId) { setLoading(false); return }
-    Promise.all([
-      obrasApi.detalhar(obraId),
-      dashboardApi.obra(obraId),
-    ]).then(([o, d]) => {
-      setObra(o)
-      setDash(d)
-    }).finally(() => setLoading(false))
+    obrasApi.detalhar(obraId)
+      .then(setObra)
+      .finally(() => setLoading(false))
   }, [])
 
   // Carrega estrutura quando a aba é selecionada ou na montagem
@@ -134,15 +129,13 @@ export default function ObraDetailPage() {
           </div>
         </div>
 
-        {/* KPIs rápidos */}
-        {dash && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
-            <KpiMini label="Progresso"       value={`${dash.percentual_geral}%`} color="bg-blue-50 text-blue-800" />
-            <KpiMini label="Atividades"      value={dash.total_atividades}       color="bg-slate-50 text-slate-800" />
-            <KpiMini label="Efetivo Hoje"    value={dash.efetivo_hoje}           color="bg-emerald-50 text-emerald-800" />
-            <KpiMini label="Impedimentos"    value={dash.impedimentos_abertos}   color="bg-orange-50 text-orange-800" />
-          </div>
-        )}
+        {/* Informações rápidas */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
+          <KpiMini label="Tipo"    value={obra.tipo}   color="bg-blue-50 text-blue-800" />
+          <KpiMini label="Status"  value={obra.status} color="bg-slate-50 text-slate-800" />
+          <KpiMini label="Área"    value={obra.area_total ? `${obra.area_total} m²` : '—'} color="bg-emerald-50 text-emerald-800" />
+          <KpiMini label="Progresso" value={obra.percentual_geral !== undefined ? `${obra.percentual_geral}%` : '—'} color="bg-orange-50 text-orange-800" />
+        </div>
       </div>
 
       {/* ── Seção: Estrutura da Obra ────────────────────────────── */}
