@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { obrasApi } from '@/lib/api'
+import { obras as obrasApi } from '@/lib/sgoApi'
 import Link from 'next/link'
 import { Plus, Building2, MapPin, Calendar, Loader2, Search } from 'lucide-react'
 import type { Obra } from '@/types'

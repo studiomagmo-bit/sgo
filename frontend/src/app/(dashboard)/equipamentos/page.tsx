@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { equipamentosApi } from '@/lib/api'
+import { equipamentos as equipamentosApi } from '@/lib/sgoApi'
 import type { Equipamento } from '@/types'
 import { Plus, Loader2, Truck } from 'lucide-react'
 

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { efetivosApi, obrasApi } from '@/lib/api'
+import { efetivos as efetivosApi, obras as obrasApi } from '@/lib/sgoApi'
 import type { EfetivoDiario, Obra } from '@/types'
 import { Plus, Loader2, Users, UserCheck, UserX } from 'lucide-react'
 

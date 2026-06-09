@@ -1,0 +1,3 @@
+The image shows a login page for a system called "SGO - Sistema de Gestão Operacional de Obras". The page has fields for "E-mail" and "Senha" (Password), with "master@sgo.dev" pre-filled in the email field. There is a blue button labeled "Entrar" (Enter). Below the login form, it indicates "SGO v0.1.0 - Gestão Operacional de Obras".
+
+The browser's developer console is also visible, showing several CORS (Cross-Origin Resource Sharing) policy errors related to accessing the login API from "studiomagmo-bit.github.io". These errors indicate that the preflight request did not pass the access control check because the "Access-Control-Allow-Origin" header was not present on the requested resource.

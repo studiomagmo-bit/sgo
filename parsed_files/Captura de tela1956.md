@@ -1,0 +1,3 @@
+The image shows a login screen for a system called "SGO - Sistema de Gestão Operacional de Obras". The screen has fields for "E-mail" and "Senha" (Password). The email field is pre-filled with "master@sgo.dev". There is a button to "Entrar" (Enter). Above the login form, there is a message "Credenciais inválidas." (Invalid credentials.).
+
+The right side of the image displays browser developer tools, showing several CORS (Cross-Origin Resource Sharing) errors related to requests made to `http://localhost:8000/api/v1/auth/login` from `https://studiomagmo-bit.github.io`. These errors indicate that the preflight requests are failing because the `Access-Control-Allow-Origin` header is not present on the requested resource.

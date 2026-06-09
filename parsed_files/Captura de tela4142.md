@@ -1,0 +1,3 @@
+Failed to create user: Database error creating new user.
+
+A modal is open to create a new user with fields for email address and user password. The email address is pre-filled with "master@sgo.dev". There is a checkbox for "Auto confirm user?" which is checked, and a note below it states that a confirmation email will not be sent when creating a user via this form. The "Create user" button is visible.

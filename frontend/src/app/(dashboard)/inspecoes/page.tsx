@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { inspecoesApi, obrasApi } from '@/lib/api'
+import { inspecoes as inspecoesApi, obras as obrasApi } from '@/lib/sgoApi'
 import type { Inspecao, Obra } from '@/types'
 import { Plus, Loader2, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
 

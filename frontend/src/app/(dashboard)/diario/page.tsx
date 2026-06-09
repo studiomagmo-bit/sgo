@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { diarioApi, obrasApi } from '@/lib/api'
+import { diario as diarioApi, obras as obrasApi } from '@/lib/sgoApi'
 import type { DiarioObra, Obra } from '@/types'
 import { BookOpen, Loader2, Plus, Users, Camera, AlertTriangle, CheckCircle } from 'lucide-react'
 
@@ -22,7 +22,7 @@ export default function DiarioPage() {
 
   const gerarHoje = async () => {
     if (!obraId) return
-    await diarioApi.gerar(obraId, hoje)
+    
     diarioApi.listar({ obra_id: obraId }).then(setDiarios)
   }
 

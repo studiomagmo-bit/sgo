@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { medicoesApi, obrasApi, contratosApi } from '@/lib/api'
+import { medicoes as medicoesApi, obras as obrasApi } from '@/lib/sgoApi'
 import type { Medicao, Obra } from '@/types'
 import { Plus, Loader2, DollarSign } from 'lucide-react'
 

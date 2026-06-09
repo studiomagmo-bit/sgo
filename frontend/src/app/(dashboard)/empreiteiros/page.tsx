@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { usuariosApi } from '@/lib/api'
+import { empreiteiros as empreiteirosApi } from '@/lib/sgoApi'
 import type { Empreiteiro } from '@/types'
 import { Plus, Loader2, HardHat, Phone, Mail } from 'lucide-react'
 
@@ -9,7 +9,7 @@ export default function EmpreiteirosPage() {
   const [loading, setLoading]           = useState(true)
 
   useEffect(() => {
-    usuariosApi.empreiteiros.listar().then(setEmpreiteiros).finally(() => setLoading(false))
+    empreiteirosApi.listar().then(setEmpreiteiros).finally(() => setLoading(false))
   }, [])
 
   return (

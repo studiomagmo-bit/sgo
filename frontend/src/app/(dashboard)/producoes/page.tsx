@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { producoesApi, obrasApi } from '@/lib/api'
+import { producoes as producoesApi, obras as obrasApi } from '@/lib/sgoApi'
 import type { Producao, Obra } from '@/types'
 import { Plus, Loader2, ClipboardList } from 'lucide-react'
 

@@ -1,0 +1,1 @@
+The build job failed with exit code 1. There is also a warning that Node.js 20 actions are deprecated and will be forced to run with Node.js 24.

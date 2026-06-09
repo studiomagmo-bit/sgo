@@ -20,19 +20,14 @@ const navItems = [
   { divider: 'Qualidade' },
   { label: 'Inspeções',      icon: CheckCircle,      href: '/inspecoes' },
   { label: 'Pendências',     icon: AlertTriangle,    href: '/pendencias' },
-  { label: 'Impedimentos',   icon: AlertTriangle,    href: '/impedimentos' },
   { divider: 'Recursos' },
-  { label: 'Almoxarifado',   icon: Package,          href: '/almoxarifado' },
   { label: 'Equipamentos',   icon: Truck,            href: '/equipamentos' },
   { divider: 'Comercial' },
   { label: 'Empreiteiros',   icon: HardHat,          href: '/empreiteiros' },
-  { label: 'Contratos',      icon: FileText,         href: '/contratos' },
   { label: 'Medições',       icon: DollarSign,       href: '/medicoes' },
   { divider: 'Registros' },
   { label: 'Diário de Obra', icon: BookOpen,         href: '/diario' },
   { divider: 'Configurações' },
-  { label: 'Usuários',       icon: Users,            href: '/usuarios' },
-  { label: 'Serviços',       icon: Wrench,           href: '/servicos' },
 ]
 
 export function Sidebar() {

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { pcpApi, obrasApi } from '@/lib/api'
+import { atividades as pcpAtividades, obras as obrasApi } from '@/lib/sgoApi'
 import type { Atividade, Obra } from '@/types'
 import { Plus, Filter, Loader2, GitBranch, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -33,7 +33,7 @@ export default function PCPPage() {
   useEffect(() => {
     if (!obraId) return
     setLoading(true)
-    pcpApi.atividades.listar({ obra_id: obraId, status: filtroStatus || undefined })
+    pcpAtividades.listar({ obra_id: obraId, status: filtroStatus || undefined })
       .then(setAtividades).finally(() => setLoading(false))
   }, [obraId, filtroStatus])
 

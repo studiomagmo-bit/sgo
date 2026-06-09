@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { obrasApi, dashboardApi } from '@/lib/api'
+import { obras as obrasApi, dashboard as dashboardApi } from '@/lib/sgoApi'
 import type { Obra, DashboardObra } from '@/types'
 import {
   ArrowLeft, Building2, GitBranch, Users, ClipboardList,

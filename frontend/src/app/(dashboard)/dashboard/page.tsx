@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dashboardApi } from '@/lib/api'
+import { dashboard as dashboardApi } from '@/lib/sgoApi'
 import { Building2, Users, AlertTriangle, CheckCircle, TrendingUp, Clock, XCircle, Loader2 } from 'lucide-react'
 import type { DashboardObra } from '@/types'
 import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip } from 'recharts'

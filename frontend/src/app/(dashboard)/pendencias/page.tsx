@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { pendenciasApi, obrasApi } from '@/lib/api'
+import { pendencias as pendenciasApi, obras as obrasApi } from '@/lib/sgoApi'
 import type { Pendencia, Obra } from '@/types'
 import { Plus, Loader2, AlertTriangle } from 'lucide-react'
 
