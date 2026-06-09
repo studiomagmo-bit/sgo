@@ -423,11 +423,176 @@ export const dashboard = {
 
   /** Legado — mantido para compatibilidade */
   obras: async () => {
+
     const { data, error } = await supabase
       .from('obras')
       .select('id, nome, tipo, status, percentual_geral, ativa')
       .eq('ativa', true)
       .order('nome')
+    if (error) throw error
+    return data ?? []
+  },
+}
+
+// ─── PORTAL DO EMPREITEIRO ────────────────────────────────────
+import { supabaseSignup, supabasePortal } from './supabase'
+
+export const portalApi = {
+  /** Cria conta de acesso para empreiteiro sem deslogar o gestor */
+  criarAcesso: async (dados: {
+    empreiteiro_id: string
+    construtora_id: string
+    nome: string
+    email: string
+    senha: string
+  }) => {
+    // Usa cliente separado (supabaseSignup) para não deslogar o gestor
+    const { data: authData, error: authErr } = await supabaseSignup.auth.signUp({
+      email: dados.email,
+      password: dados.senha,
+    })
+    if (authErr) throw authErr
+    const userId = authData.user?.id
+    if (!userId) throw new Error('Falha ao criar usuário de autenticação')
+
+    // Insere perfil em usuarios_empreiteiro usando o cliente principal
+    const { error: insertErr } = await supabase
+      .from('usuarios_empreiteiro')
+      .insert({
+        id: userId,
+        empreiteiro_id: dados.empreiteiro_id,
+        construtora_id: dados.construtora_id,
+        nome: dados.nome,
+        email: dados.email,
+        perfil: 'administrador',
+        ativo: true,
+      })
+    if (insertErr) throw insertErr
+    return { userId, email: dados.email }
+  },
+
+  /** Lista acessos criados para um empreiteiro */
+  listarAcessos: async (empreiteiro_id: string) => {
+    const { data, error } = await supabase
+      .from('usuarios_empreiteiro')
+      .select('id, nome, email, perfil, ativo, criado_em')
+      .eq('empreiteiro_id', empreiteiro_id)
+    if (error) throw error
+    return data ?? []
+  },
+
+  /** Login do empreiteiro no portal (usa supabasePortal para sessão isolada) */
+  loginPortal: async (email: string, senha: string) => {
+    const { data, error } = await supabasePortal.auth.signInWithPassword({ email, password: senha })
+    if (error) throw error
+    return data
+  },
+
+  /** Logout do portal */
+  logoutPortal: async () => {
+    await supabasePortal.auth.signOut()
+  },
+
+  /** Busca perfil do empreiteiro logado no portal */
+  buscarPerfil: async () => {
+    const { data: { user } } = await supabasePortal.auth.getUser()
+    if (!user) return null
+    const { data, error } = await supabasePortal
+      .from('usuarios_empreiteiro')
+      .select('*, empreiteiros(id, razao_social, nome_fantasia, construtora_id)')
+      .eq('id', user.id)
+      .single()
+    if (error) return null
+    return data
+  },
+
+  /** Obras vinculadas ao empreiteiro (via atividades) */
+  minhasObras: async (empreiteiro_id: string) => {
+    const { data, error } = await supabasePortal
+      .from('atividades')
+      .select('obra_id, obras(id, nome, status, percentual_geral, data_fim_prev)')
+      .eq('empreiteiro_id', empreiteiro_id)
+    if (error) throw error
+    // Dedup por obra_id
+    const seen = new Set<string>()
+    return (data ?? [])
+      .filter((a: any) => { if (seen.has(a.obra_id)) return false; seen.add(a.obra_id); return true })
+      .map((a: any) => a.obras)
+      .filter(Boolean)
+  },
+
+  /** Atividades do empreiteiro (opcionalmente filtradas por obra) */
+  minhasAtividades: async (empreiteiro_id: string, obra_id?: string) => {
+    let q = supabasePortal
+      .from('atividades')
+      .select('*, obras(nome), estrutura_obra(nome, tipo), empreiteiros(razao_social)')
+      .eq('empreiteiro_id', empreiteiro_id)
+      .order('data_inicio_prev', { ascending: true })
+    if (obra_id) q = q.eq('obra_id', obra_id)
+    const { data, error } = await q
+    if (error) throw error
+    return data ?? []
+  },
+
+  /** Atualiza status/% de atividade (pelo empreiteiro) */
+  atualizarAtividade: async (id: string, d: { status?: string; percentual_exec?: number; notas_execucao?: string; foto_url?: string }) => {
+    const { data, error } = await supabasePortal
+      .from('atividades')
+      .update(d)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  /** Colaboradores do empreiteiro */
+  meusColaboradores: async (empreiteiro_id: string) => {
+    const { data, error } = await supabasePortal
+      .from('colaboradores')
+      .select('*')
+      .eq('empreiteiro_id', empreiteiro_id)
+      .eq('ativo', true)
+      .order('nome')
+    if (error) throw error
+    return data ?? []
+  },
+
+  /** Buscar ou criar efetivo_diario para o portal */
+  buscarOuCriarEfetivo: async (obra_id: string, empreiteiro_id: string, data: string, construtora_id: string) => {
+    const { data: existing } = await supabasePortal
+      .from('efetivo_diario')
+      .select('*')
+      .eq('obra_id', obra_id)
+      .eq('empreiteiro_id', empreiteiro_id)
+      .eq('data', data)
+      .maybeSingle()
+    if (existing) return existing
+    const { data: novo, error } = await supabasePortal
+      .from('efetivo_diario')
+      .insert({ obra_id, empreiteiro_id, data, construtora_id })
+      .select()
+      .single()
+    if (error) throw error
+    return novo
+  },
+
+  /** Salvar presença (lote) */
+  salvarPresenca: async (registros: any[]) => {
+    const { data, error } = await supabasePortal
+      .from('efetivo_colaboradores')
+      .upsert(registros, { onConflict: 'efetivo_id,colaborador_id' })
+      .select()
+    if (error) throw error
+    return data ?? []
+  },
+
+  /** Listar presença do dia */
+  listarPresenca: async (efetivo_id: string) => {
+    const { data, error } = await supabasePortal
+      .from('efetivo_colaboradores')
+      .select('*, colaboradores(nome, funcao)')
+      .eq('efetivo_id', efetivo_id)
     if (error) throw error
     return data ?? []
   },
