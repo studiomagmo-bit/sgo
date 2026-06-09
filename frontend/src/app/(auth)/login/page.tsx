@@ -1,36 +1,42 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import { toast } from 'sonner'
 import { Building2, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, user, loading } = useAuth()
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  // Navega para dashboard assim que user for setado
+  useEffect(() => {
+    if (!loading && user) router.replace('/dashboard')
+  }, [user, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
     try {
       await login(email, password)
-      router.push('/dashboard')
+      // navegação acontece no useEffect acima
     } catch (err: any) {
       const msg = err?.message || ''
-      if (msg.includes('Invalid login') || msg.includes('invalid')) {
+      if (msg.includes('Invalid login') || msg.includes('invalid') || msg.includes('credencial')) {
         toast.error('E-mail ou senha incorretos.')
       } else if (msg.includes('Email not confirmed')) {
         toast.error('Confirme seu e-mail antes de acessar.')
       } else {
         toast.error(msg || 'Erro ao fazer login. Tente novamente.')
       }
-    } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
+
+  if (loading) return null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
@@ -55,7 +61,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={submitting}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
                 placeholder="seu@email.com"
               />
             </div>
@@ -66,17 +73,18 @@ export default function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={submitting}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 text-white py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
             >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? 'Entrando...' : 'Entrar'}
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {submitting ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
         </div>
