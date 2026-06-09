@@ -61,7 +61,7 @@ export const atividades = {
 // ─── EFETIVO ──────────────────────────────────────────────────
 export const efetivos = {
   listar: async (params?: any) => {
-    let q = supabase.from('efetivos_diarios').select('*, empreiteiros(razao_social)').order('data', { ascending: false })
+    let q = supabase.from('efetivo_diario').select('*, empreiteiros(razao_social)').order('data', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
     if (params?.data)    q = q.eq('data', params.data)
     const { data, error } = await q
@@ -70,7 +70,7 @@ export const efetivos = {
   },
   criar: async (d: any) => {
     const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('efetivos_diarios').insert({ ...d, construtora_id }).select().single()
+    const { data, error } = await supabase.from('efetivo_diario').insert({ ...d, construtora_id }).select().single()
     if (error) throw error
     return data
   },
@@ -160,7 +160,7 @@ export const medicoes = {
 // ─── DIÁRIO ───────────────────────────────────────────────────
 export const diario = {
   listar: async (params?: any) => {
-    let q = supabase.from('diario_obras').select('*, obras(nome)').order('data', { ascending: false })
+    let q = supabase.from('diario_obra').select('*, obras(nome)').order('data', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
     const { data, error } = await q
     if (error) throw error
