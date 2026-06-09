@@ -6,7 +6,7 @@ import {
   Building2, LayoutDashboard, GitBranch, Users, ClipboardList,
   HardHat, CheckCircle, AlertTriangle, DollarSign, Truck,
   BookOpen, LogOut, ChevronRight, Settings, Shield,
-  UserRound, LayoutGrid, PieChart, BarChart3,
+  UserRound, LayoutGrid, PieChart, BarChart3, UserCog,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -31,6 +31,7 @@ const nav = [
   { divider: 'Registros' },
   { label: 'Diário de Obra',   icon: BookOpen,        href: '/diario' },
   { divider: 'Configurações' },
+  { label: 'Usuários',         icon: UserCog,         href: '/usuarios' },
   { label: 'Configurações',    icon: Settings,        href: '/configuracoes' },
 ]
 

@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, supabaseSignup, supabasePortal } from './supabase'
 
 // Helper: retorna construtora_id do usuário logado
 // Usa o perfil cacheado no localStorage (carregado no login) para evitar
@@ -593,6 +593,111 @@ export const portalApi = {
       .from('efetivo_colaboradores')
       .select('*, colaboradores(nome, funcao)')
       .eq('efetivo_id', efetivo_id)
+    if (error) throw error
+    return data ?? []
+  },
+}
+
+// ─── USUÁRIOS (gestores / engenheiros criados pelo admin) ─────
+export const usuariosApi = {
+  /** Listar todos usuários da construtora */
+  listar: async () => {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*, usuarios_obra(obra_id, papel, ativo, obras(nome))')
+      .order('nome')
+    if (error) throw error
+    return data ?? []
+  },
+
+  /** Criar novo usuário (auth + registro na tabela usuarios) */
+  criar: async (d: {
+    nome: string
+    username: string
+    senha: string
+    perfil: string
+  }) => {
+    const construtora_id = await getConstrutoraId()
+    if (!construtora_id) throw new Error('Construtora não identificada.')
+
+    // Gera email interno baseado no username (não é exibido ao usuário)
+    const email = `${d.username.toLowerCase().replace(/\s+/g, '_')}@${construtora_id}.sgo.internal`
+
+    // Cria auth user via supabaseSignup (não derruba sessão do gestor)
+    const { data: authData, error: authError } = await supabaseSignup.auth.signUp({
+      email,
+      password: d.senha,
+    })
+    if (authError) throw authError
+    const authUser = authData.user
+    if (!authUser) throw new Error('Falha ao criar usuário de autenticação.')
+
+    // Insere na tabela usuarios
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const { data, error } = await supabase
+      .from('usuarios')
+      .insert({
+        id:             authUser.id,
+        nome:           d.nome,
+        email,
+        username:       d.username,
+        perfil:         d.perfil,
+        construtora_id,
+        criado_por:     currentUser?.id ?? null,
+        ativo:          true,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  /** Atualizar dados de um usuário */
+  atualizar: async (id: string, d: Partial<{ nome: string; perfil: string; ativo: boolean; username: string }>) => {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .update(d)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  /** Desativar usuário (soft delete) */
+  desativar: async (id: string) => {
+    const { error } = await supabase.from('usuarios').update({ ativo: false }).eq('id', id)
+    if (error) throw error
+  },
+
+  /** Vincular usuário a uma obra */
+  vincularObra: async (usuario_id: string, obra_id: string, papel = 'engenheiro') => {
+    const construtora_id = await getConstrutoraId()
+    const { data, error } = await supabase
+      .from('usuarios_obra')
+      .upsert({ usuario_id, obra_id, construtora_id, papel, ativo: true }, { onConflict: 'usuario_id,obra_id' })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  /** Desvincular usuário de uma obra */
+  desvincularObra: async (usuario_id: string, obra_id: string) => {
+    const { error } = await supabase
+      .from('usuarios_obra')
+      .update({ ativo: false })
+      .match({ usuario_id, obra_id })
+    if (error) throw error
+  },
+
+  /** Listar obras vinculadas a um usuário */
+  obrasDoUsuario: async (usuario_id: string) => {
+    const { data, error } = await supabase
+      .from('usuarios_obra')
+      .select('*, obras(id, nome, status)')
+      .eq('usuario_id', usuario_id)
+      .eq('ativo', true)
     if (error) throw error
     return data ?? []
   },
