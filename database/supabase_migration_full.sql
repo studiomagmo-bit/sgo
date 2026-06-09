@@ -652,7 +652,7 @@ CREATE TABLE fotos (
   atividade_id    UUID REFERENCES atividades(id)   ON DELETE CASCADE,
   pendencia_id    UUID,
   inspecao_id     UUID,
-  equipamento_id  UUID REFERENCES equipamentos(id) ON DELETE CASCADE,
+  equipamento_id  UUID,                             -- FK adicionada via ALTER TABLE (seção 07)
 
   url             TEXT NOT NULL,
   thumbnail_url   TEXT,
@@ -749,7 +749,13 @@ CREATE TABLE equipamentos (
 
 CREATE INDEX idx_equipamentos_construtora  ON equipamentos(construtora_id);
 CREATE INDEX idx_equipamentos_empreiteiro  ON equipamentos(empreiteiro_id);
+
 CREATE INDEX idx_equipamentos_status       ON equipamentos(status);
+
+-- FK de fotos → equipamentos (fotos criada antes de equipamentos)
+ALTER TABLE fotos
+  ADD CONSTRAINT fk_fotos_equipamento
+    FOREIGN KEY (equipamento_id) REFERENCES equipamentos(id) ON DELETE CASCADE;
 
 -- ============================================================
 -- MOVIMENTAÇÃO / ALOCAÇÃO DE EQUIPAMENTOS

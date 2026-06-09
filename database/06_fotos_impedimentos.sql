@@ -17,7 +17,7 @@ CREATE TABLE fotos (
   atividade_id    UUID REFERENCES atividades(id)   ON DELETE CASCADE,
   pendencia_id    UUID,
   inspecao_id     UUID,
-  equipamento_id  UUID REFERENCES equipamentos(id) ON DELETE CASCADE,
+  equipamento_id  UUID,                             -- FK adicionada via ALTER TABLE no arquivo 07
 
   url             TEXT NOT NULL,
   thumbnail_url   TEXT,
