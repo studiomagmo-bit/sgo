@@ -6,7 +6,7 @@ import {
   Building2, LayoutDashboard, GitBranch, Users, ClipboardList,
   Wrench, Package, HardHat, CheckCircle, AlertTriangle,
   FileText, DollarSign, Truck, BookOpen, LogOut, ChevronRight,
-  Settings, BarChart3, Shield,
+  Settings, BarChart3, Shield, UserRound, LayoutGrid,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -23,9 +23,10 @@ const navItems = [
   { divider: 'Recursos' },
   { label: 'Equipamentos',   icon: Truck,            href: '/equipamentos' },
   { divider: 'Comercial' },
-  { label: 'Empreiteiros',      icon: HardHat,     href: '/empreiteiros'      },
-  { label: 'Portal Empreiteiro', icon: HardHat,    href: '/empreiteiro-portal' },
-  { label: 'Medições',          icon: DollarSign,  href: '/medicoes'           },
+  { label: 'Empreiteiros',      icon: HardHat,      href: '/empreiteiros'       },
+  { label: 'Colaboradores',     icon: UserRound,    href: '/colaboradores'      },
+  { label: 'Portal Empreiteiro', icon: LayoutGrid,  href: '/empreiteiro-portal' },
+  { label: 'Medições',          icon: DollarSign,   href: '/medicoes'           },
   { divider: 'Registros' },
   { label: 'Diário de Obra', icon: BookOpen,         href: '/diario' },
   { divider: 'Configurações' },
