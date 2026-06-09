@@ -164,7 +164,7 @@ export default function EfetivoPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Efetivo Diário</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Efetivo Diário</h1>
         <p className="text-gray-500 text-sm mt-1">
           Registro de presença por colaborador
         </p>
@@ -179,7 +179,7 @@ export default function EfetivoPage() {
           <select
             value={obraId}
             onChange={e => setObraId(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
           >
             <option value="">Selecionar obra...</option>
             {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
@@ -192,7 +192,7 @@ export default function EfetivoPage() {
           <select
             value={empreteiroId}
             onChange={e => setEmpreteiroId(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
           >
             <option value="">Selecionar empreiteiro...</option>
             {empreiteiros.map(e => <option key={e.id} value={e.id}>{e.razao_social}</option>)}
@@ -206,7 +206,7 @@ export default function EfetivoPage() {
             type="date"
             value={data}
             onChange={e => setData(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
           />
         </div>
       </div>
@@ -214,7 +214,7 @@ export default function EfetivoPage() {
       {/* Estado: não selecionado */}
       {(!obraId || !empreteiroId) && (
         <div className="rounded-xl border border-gray-200 bg-white/60 p-10 text-center">
-          <Users className="h-10 w-10 text-slate-600 mx-auto mb-3" />
+          <Users className="h-10 w-10 text-gray-600 mx-auto mb-3" />
           <p className="text-gray-500 text-sm">Selecione uma obra e um empreiteiro para registrar a presença.</p>
         </div>
       )}
@@ -257,7 +257,7 @@ export default function EfetivoPage() {
           {/* Lista de colaboradores */}
           <div className="rounded-xl border border-gray-200 bg-white/60 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white/90">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Users className="h-4 w-4 text-gray-500" />
                 Registro de Presença — {new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </h2>
@@ -293,7 +293,7 @@ export default function EfetivoPage() {
                     {/* Info colaborador */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-white">{p.nome}</p>
+                        <p className="text-sm font-medium text-gray-900">{p.nome}</p>
                         {p.funcao && (
                           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                             {p.funcao}
@@ -321,7 +321,7 @@ export default function EfetivoPage() {
                               step={0.5}
                               value={p.horas_trabalhadas}
                               onChange={e => atualizarCampo(p.colaborador_id, 'horas_trabalhadas', Number(e.target.value))}
-                              className="w-16 rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-white text-center focus:outline-none focus:border-blue-500"
+                              className="w-16 rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-gray-900 text-center focus:outline-none focus:border-blue-500"
                             />
                             <span className="text-xs text-gray-400">h</span>
                           </div>
@@ -331,7 +331,7 @@ export default function EfetivoPage() {
                             <select
                               value={p.motivo_ausencia}
                               onChange={e => atualizarCampo(p.colaborador_id, 'motivo_ausencia', e.target.value)}
-                              className="rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                              className="rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-gray-900 focus:outline-none focus:border-blue-500"
                             >
                               <option value="">Selecionar...</option>
                               {MOTIVOS.map(m => (
@@ -345,7 +345,7 @@ export default function EfetivoPage() {
                           value={p.observacao}
                           onChange={e => atualizarCampo(p.colaborador_id, 'observacao', e.target.value)}
                           placeholder="Observação..."
-                          className="flex-1 min-w-[160px] rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                          className="flex-1 min-w-[160px] rounded bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -387,7 +387,7 @@ export default function EfetivoPage() {
           {/* Não há colaboradores */}
           {presencas.length === 0 && !loadingPresenca && (
             <div className="rounded-xl border border-gray-200 bg-white/60 p-8 text-center">
-              <Users className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+              <Users className="h-8 w-8 text-gray-600 mx-auto mb-2" />
               <p className="text-gray-500 text-sm">Nenhum colaborador ativo cadastrado para este empreiteiro.</p>
               <p className="text-gray-400 text-xs mt-1">
                 Vá em <strong className="text-gray-500">Colaboradores</strong> para cadastrar os trabalhadores.
@@ -401,7 +401,7 @@ export default function EfetivoPage() {
       {obraId && data && (
         <div className="rounded-xl border border-gray-200 bg-white/60 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-white">
+            <h2 className="text-sm font-semibold text-gray-900">
               Registros do dia — {new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')}
             </h2>
           </div>
@@ -415,7 +415,7 @@ export default function EfetivoPage() {
                 <div key={h.id} className="flex items-center justify-between px-5 py-3">
                   <div className="flex items-center gap-3">
                     <HardHat className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-white">{h.empreiteiros?.razao_social || '—'}</span>
+                    <span className="text-sm text-gray-900">{h.empreiteiros?.razao_social || '—'}</span>
                   </div>
                   <button
                     onClick={() => { setEmpreteiroId(h.empreiteiro_id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}

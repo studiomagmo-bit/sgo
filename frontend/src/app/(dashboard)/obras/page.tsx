@@ -93,7 +93,7 @@ export default function ObrasPage() {
                 <div className="h-32 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                   {obra.foto_capa_url
                     ? <img src={obra.foto_capa_url} alt={obra.nome} className="w-full h-full object-cover" />
-                    : <Building2 className="h-10 w-10 text-white/60" />}
+                    : <Building2 className="h-10 w-10 text-gray-900/60" />}
                 </div>
 
                 <div className="flex items-start justify-between gap-2 mb-2">

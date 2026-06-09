@@ -195,7 +195,7 @@ export default function ObraDetailPage() {
           )}
           <div className="absolute inset-0 flex items-end justify-between p-5">
             <div>
-              <h1 className="text-2xl font-bold text-white">{obra.nome}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{obra.nome}</h1>
               <div className="flex items-center gap-3 mt-1 text-blue-200 text-sm">
                 {obra.cidade && <span className="flex items-center gap-1"><MapPin className="h-3 w-3"/>{obra.cidade}</span>}
                 {obra.data_fim_prev && <span className="flex items-center gap-1"><Calendar className="h-3 w-3"/>Prazo: {new Date(obra.data_fim_prev).toLocaleDateString('pt-BR')}</span>}
@@ -206,7 +206,7 @@ export default function ObraDetailPage() {
               {/* Botão Editar Obra */}
               <button
                 onClick={openEdit}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 px-4 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 px-4 py-2 text-sm font-semibold text-gray-900 transition-colors shadow-sm"
               >
                 <Pencil className="h-4 w-4" />
                 Editar Obra
@@ -214,7 +214,7 @@ export default function ObraDetailPage() {
               {/* Botão de destaque — Estrutura da Obra */}
               <button
                 onClick={() => router.push(`/obras/estrutura?id=${id}`)}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 px-4 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 px-4 py-2 text-sm font-semibold text-gray-900 transition-colors shadow-sm"
               >
                 <GitBranch className="h-4 w-4" />
                 Estrutura da Obra

@@ -165,7 +165,7 @@ export default function ConfiguracoesPage() {
         <div className="bg-white rounded-xl border shadow-sm p-6">
           <div className="flex items-start gap-4">
             <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
-              <Building2 className="h-6 w-6 text-white" />
+              <Building2 className="h-6 w-6 text-gray-900" />
             </div>
             <div className="space-y-1">
               <p className="font-bold text-gray-900 text-lg">SGO <span className="text-blue-600">v0.1.0</span></p>

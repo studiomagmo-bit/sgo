@@ -167,7 +167,7 @@ export default function DashboardPage() {
             { label: 'Medições Aprov.', value: fmtBRL(valorMed),      sub: 'valor aprovado/pago' },
           ].map(s => (
             <div key={s.label} className="bg-white/15 rounded-xl px-4 py-3">
-              <p className="text-xl font-bold text-white">{s.value}</p>
+              <p className="text-xl font-bold text-gray-900">{s.value}</p>
               <p className="text-xs text-blue-100 mt-0.5">{s.label}</p>
               <p className="text-[10px] text-blue-200/70 mt-0.5">{s.sub}</p>
             </div>

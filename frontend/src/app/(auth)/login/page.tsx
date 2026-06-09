@@ -67,11 +67,11 @@ export default function LoginPage() {
       <div className="relative w-full max-w-4xl flex rounded-3xl overflow-hidden shadow-2xl">
 
         {/* Painel esquerdo */}
-        <div className="hidden md:flex flex-col justify-between w-1/2 bg-white/10 backdrop-blur-sm p-10 text-white">
+        <div className="hidden md:flex flex-col justify-between w-1/2 bg-white/10 backdrop-blur-sm p-10 text-gray-900">
           <div>
             <div className="flex items-center gap-3 mb-10">
               <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-white" />
+                <Building2 className="h-6 w-6 text-gray-900" />
               </div>
               <div>
                 <p className="text-xl font-bold leading-none">SGO</p>
@@ -94,10 +94,10 @@ export default function LoginPage() {
             ].map(r => (
               <div key={r.label} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5">
                 <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                  <r.icon className="h-4 w-4 text-white" />
+                  <r.icon className="h-4 w-4 text-gray-900" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white leading-none">{r.label}</p>
+                  <p className="text-xs font-semibold text-gray-900 leading-none">{r.label}</p>
                   <p className="text-xs text-blue-200 mt-0.5">{r.desc}</p>
                 </div>
               </div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
         <div className="flex-1 bg-white p-10 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-8 md:hidden">
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-white" />
+              <Building2 className="h-5 w-5 text-gray-900" />
             </div>
             <div>
               <p className="font-bold text-gray-900">SGO</p>

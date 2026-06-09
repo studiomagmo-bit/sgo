@@ -116,49 +116,49 @@ export default function PortalPresencaPage() {
   const ausentes  = colaboradores.length - presentes
   const horas     = colaboradores.filter(c => presencas[c.id]?.presente).reduce((s, c) => s + Number(presencas[c.id]?.horas_trabalhadas || 8), 0)
 
-  if (loadingPortal || !portalUser) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><RefreshCw className="h-7 w-7 animate-spin text-blue-500" /></div>
+  if (loadingPortal || !portalUser) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><RefreshCw className="h-7 w-7 animate-spin text-blue-500" /></div>
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-slate-700 bg-slate-900 px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center"><HardHat className="h-4 w-4 text-white" /></div>
           <div>
-            <p className="text-sm font-bold text-white leading-tight">Presença Diária</p>
-            <p className="text-xs text-slate-400">{portalUser.empreiteiros?.razao_social}</p>
+            <p className="text-sm font-bold text-gray-900 leading-tight">Presença Diária</p>
+            <p className="text-xs text-gray-400">{portalUser.empreiteiros?.razao_social}</p>
           </div>
         </div>
         <button onClick={() => { logoutPortal(); router.replace('/portal/login') }} className="text-red-400 hover:bg-red-900/20 rounded-lg p-2"><LogOut className="h-4 w-4" /></button>
       </header>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-slate-700 bg-slate-900">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-gray-200 bg-gray-50">
         {[{ href: '/portal/home', label: 'Início', icon: Building2 }, { href: '/portal/presenca', label: 'Presença', icon: Users }, { href: '/portal/atividades', label: 'Atividades', icon: GitBranch }].map(item => {
           const Icon = item.icon
           const active = item.href.includes('presenca')
-          return <Link key={item.href} href={item.href} className={clsx('flex-1 flex flex-col items-center gap-1 py-3 text-xs', active ? 'text-blue-400' : 'text-slate-500')}><Icon className="h-5 w-5" />{item.label}</Link>
+          return <Link key={item.href} href={item.href} className={clsx('flex-1 flex flex-col items-center gap-1 py-3 text-xs', active ? 'text-blue-400' : 'text-gray-500')}><Icon className="h-5 w-5" />{item.label}</Link>
         })}
       </nav>
 
       <main className="pt-16 pb-24 px-4 max-w-lg mx-auto space-y-4">
         <div className="pt-4">
-          <h1 className="text-xl font-bold text-white">Presença Diária</h1>
-          <p className="text-slate-400 text-sm">Marque quem está presente hoje</p>
+          <h1 className="text-xl font-bold text-gray-900">Presença Diária</h1>
+          <p className="text-gray-400 text-sm">Marque quem está presente hoje</p>
         </div>
 
         {/* Filtros */}
         <div className="space-y-2">
-          <select value={obraId} onChange={e => setObraId(e.target.value)} className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          <select value={obraId} onChange={e => setObraId(e.target.value)} className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
             <option value="">Selecionar obra...</option>
             {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
           </select>
-          <input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500" />
+          <input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500" />
         </div>
 
         {erro && <div className="rounded-lg bg-red-900/40 border border-red-700 px-3 py-2 text-sm text-red-300 flex gap-2"><AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{erro}</div>}
 
-        {!obraId && <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-8 text-center"><Building2 className="h-8 w-8 text-slate-600 mx-auto mb-2" /><p className="text-slate-500 text-sm">Selecione uma obra</p></div>}
+        {!obraId && <div className="rounded-xl border border-gray-200 bg-white p-8 text-center"><Building2 className="h-8 w-8 text-gray-600 mx-auto mb-2" /><p className="text-gray-500 text-sm">Selecione uma obra</p></div>}
 
-        {loading && obraId && <div className="text-slate-400 text-sm animate-pulse flex gap-2"><RefreshCw className="h-4 w-4 animate-spin" />Carregando colaboradores...</div>}
+        {loading && obraId && <div className="text-gray-400 text-sm animate-pulse flex gap-2"><RefreshCw className="h-4 w-4 animate-spin" />Carregando colaboradores...</div>}
 
         {!loading && obraId && (
           <>
@@ -166,37 +166,37 @@ export default function PortalPresencaPage() {
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-xl bg-emerald-900/20 border border-emerald-700/40 p-3 text-center">
                 <p className="text-2xl font-bold text-emerald-300">{presentes}</p>
-                <p className="text-xs text-slate-400 mt-0.5">Presentes</p>
+                <p className="text-xs text-gray-400 mt-0.5">Presentes</p>
               </div>
               <div className="rounded-xl bg-red-900/20 border border-red-700/40 p-3 text-center">
                 <p className="text-2xl font-bold text-red-300">{ausentes}</p>
-                <p className="text-xs text-slate-400 mt-0.5">Ausentes</p>
+                <p className="text-xs text-gray-400 mt-0.5">Ausentes</p>
               </div>
               <div className="rounded-xl bg-blue-900/20 border border-blue-700/40 p-3 text-center">
                 <p className="text-2xl font-bold text-blue-300">{horas}h</p>
-                <p className="text-xs text-slate-400 mt-0.5">Total hrs</p>
+                <p className="text-xs text-gray-400 mt-0.5">Total hrs</p>
               </div>
             </div>
 
             {colaboradores.length === 0 ? (
-              <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-8 text-center">
-                <Users className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-slate-500 text-sm">Nenhum colaborador cadastrado.</p>
-                <p className="text-slate-600 text-xs mt-1">Fale com o gestor para cadastrá-los.</p>
+              <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+                <Users className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">Nenhum colaborador cadastrado.</p>
+                <p className="text-gray-600 text-xs mt-1">Fale com o gestor para cadastrá-los.</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {colaboradores.map(c => {
                   const p = presencas[c.id] ?? { presente: true }
                   return (
-                    <div key={c.id} className={clsx('rounded-xl border p-4', p.presente ? 'border-slate-700 bg-slate-800/60' : 'border-red-800/40 bg-red-900/10')}>
+                    <div key={c.id} className={clsx('rounded-xl border p-4', p.presente ? 'border-gray-200 bg-white' : 'border-red-800/40 bg-red-900/10')}>
                       <div className="flex items-center gap-3">
                         <button onClick={() => toggle(c.id)} className={clsx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all', p.presente ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400' : 'border-red-500 bg-red-500/20 text-red-400')}>
                           {p.presente ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                         </button>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-white">{c.nome}</p>
-                          {c.funcao && <p className="text-xs text-slate-400">{c.funcao}</p>}
+                          <p className="text-sm font-medium text-gray-900">{c.nome}</p>
+                          {c.funcao && <p className="text-xs text-gray-400">{c.funcao}</p>}
                         </div>
                         <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium border', p.presente ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/40' : 'bg-red-900/40 text-red-300 border-red-700/40')}>
                           {p.presente ? 'Presente' : 'Ausente'}
@@ -204,13 +204,13 @@ export default function PortalPresencaPage() {
                       </div>
                       {p.presente ? (
                         <div className="mt-3 flex items-center gap-2">
-                          <Clock className="h-3.5 w-3.5 text-slate-500" />
-                          <label className="text-xs text-slate-400">Horas:</label>
-                          <input type="number" min={0} max={24} step={0.5} value={p.horas_trabalhadas ?? 8} onChange={e => set(c.id, 'horas_trabalhadas', Number(e.target.value))} className="w-16 rounded bg-slate-700 border border-slate-600 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
-                          <span className="text-xs text-slate-500">h</span>
+                          <Clock className="h-3.5 w-3.5 text-gray-500" />
+                          <label className="text-xs text-gray-400">Horas:</label>
+                          <input type="number" min={0} max={24} step={0.5} value={p.horas_trabalhadas ?? 8} onChange={e => set(c.id, 'horas_trabalhadas', Number(e.target.value))} className="w-16 rounded bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs text-gray-900 text-center focus:outline-none" />
+                          <span className="text-xs text-gray-500">h</span>
                         </div>
                       ) : (
-                        <select value={p.motivo_ausencia ?? ''} onChange={e => set(c.id, 'motivo_ausencia', e.target.value)} className="mt-3 w-full rounded-lg bg-slate-700 border border-slate-600 px-2 py-1.5 text-xs text-white focus:outline-none">
+                        <select value={p.motivo_ausencia ?? ''} onChange={e => set(c.id, 'motivo_ausencia', e.target.value)} className="mt-3 w-full rounded-lg bg-gray-100 border border-gray-200 px-2 py-1.5 text-xs text-gray-900 focus:outline-none">
                           <option value="">Motivo da ausência...</option>
                           {MOTIVOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>

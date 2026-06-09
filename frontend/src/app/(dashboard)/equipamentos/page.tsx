@@ -131,7 +131,7 @@ export default function EquipamentosPage() {
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <Truck className="h-5 w-5 text-slate-600" />
+                      <Truck className="h-5 w-5 text-gray-600" />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">{e.nome}</p>

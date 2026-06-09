@@ -101,8 +101,8 @@ export default function UsuariosAdminPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Usuários</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Gerencie usuários e convites</p>
+          <h1 className="text-2xl font-bold text-gray-900">Usuários</h1>
+          <p className="text-gray-400 text-sm mt-0.5">Gerencie usuários e convites</p>
         </div>
         <button onClick={() => { setModal(true); setMsg('') }}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors">
@@ -111,11 +111,11 @@ export default function UsuariosAdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-800 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 bg-white p-1 rounded-lg w-fit">
         {(['usuarios','convites'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={clsx('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white')}>
+              tab === t ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-900')}>
             {t === 'usuarios' ? `Usuários (${usuarios.length})` : `Convites (${convites.filter(c => c.status === 'pendente').length})`}
           </button>
         ))}
@@ -123,18 +123,18 @@ export default function UsuariosAdminPage() {
 
       {/* Busca */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por nome ou e-mail..."
-          className="w-full pl-9 pr-4 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-sm focus:outline-none focus:border-purple-500" />
+          className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-purple-500" />
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-40"><Loader2 className="h-7 w-7 animate-spin text-purple-400" /></div>
       ) : tab === 'usuarios' ? (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-900 text-slate-400 text-xs uppercase">
+            <thead className="bg-gray-50 text-gray-400 text-xs uppercase">
               <tr>
                 <th className="px-4 py-3 text-left">Usuário</th>
                 <th className="px-4 py-3 text-left">Construtora</th>
@@ -144,27 +144,27 @@ export default function UsuariosAdminPage() {
                 <th className="px-4 py-3 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-gray-100">
               {filteredU.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">Nenhum usuário encontrado</td></tr>
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-500">Nenhum usuário encontrado</td></tr>
               ) : filteredU.map(u => (
-                <tr key={u.id} className="hover:bg-slate-750 transition-colors">
+                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold">
                         {u.nome.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-medium text-white">{u.nome}</p>
-                        <p className="text-xs text-slate-400">{u.email}</p>
+                        <p className="font-medium text-gray-900">{u.nome}</p>
+                        <p className="text-xs text-gray-400">{u.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{u.construtoras?.nome ?? <span className="text-slate-500">—</span>}</td>
-                  <td className="px-4 py-3"><span className="text-xs text-slate-300 capitalize">{u.perfil}</span></td>
+                  <td className="px-4 py-3 text-gray-600">{u.construtoras?.nome ?? <span className="text-gray-500">—</span>}</td>
+                  <td className="px-4 py-3"><span className="text-xs text-gray-600 capitalize">{u.perfil}</span></td>
                   <td className="px-4 py-3 text-center">
                     <span className={clsx('px-2 py-0.5 rounded-full text-xs',
-                      u.perfil_sistema === 'superadmin' ? 'bg-purple-900/60 text-purple-300' : 'bg-slate-700 text-slate-400')}>
+                      u.perfil_sistema === 'superadmin' ? 'bg-purple-900/60 text-purple-300' : 'bg-gray-100 text-gray-400')}>
                       {u.perfil_sistema}
                     </span>
                   </td>
@@ -192,9 +192,9 @@ export default function UsuariosAdminPage() {
           </table>
         </div>
       ) : (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-slate-900 text-slate-400 text-xs uppercase">
+            <thead className="bg-gray-50 text-gray-400 text-xs uppercase">
               <tr>
                 <th className="px-4 py-3 text-left">E-mail</th>
                 <th className="px-4 py-3 text-left">Construtora</th>
@@ -204,23 +204,23 @@ export default function UsuariosAdminPage() {
                 <th className="px-4 py-3 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-gray-100">
               {filteredC.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">Nenhum convite encontrado</td></tr>
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-500">Nenhum convite encontrado</td></tr>
               ) : filteredC.map(c => (
-                <tr key={c.id} className="hover:bg-slate-750 transition-colors">
+                <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+                      <Mail className="h-4 w-4 text-gray-400 shrink-0" />
                       <div>
-                        <p className="text-white">{c.email}</p>
-                        {c.nome && <p className="text-xs text-slate-400">{c.nome}</p>}
+                        <p className="text-gray-900">{c.email}</p>
+                        {c.nome && <p className="text-xs text-gray-400">{c.nome}</p>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{c.construtoras?.nome ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-300 capitalize text-xs">{c.perfil}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{new Date(c.expira_em).toLocaleDateString('pt-BR')}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.construtoras?.nome ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 capitalize text-xs">{c.perfil}</td>
+                  <td className="px-4 py-3 text-xs text-gray-400">{new Date(c.expira_em).toLocaleDateString('pt-BR')}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={clsx('px-2 py-0.5 rounded-full text-xs', {
                       'bg-yellow-900/50 text-yellow-300': c.status === 'pendente',
@@ -233,7 +233,7 @@ export default function UsuariosAdminPage() {
                       {c.status === 'pendente' && (
                         <>
                           <button onClick={() => copyLink(c.token)}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded transition-colors">
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-900 rounded transition-colors">
                             {copied === c.token ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                             {copied === c.token ? 'Copiado!' : 'Link'}
                           </button>
@@ -255,44 +255,44 @@ export default function UsuariosAdminPage() {
       {/* Modal Convidar */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-slate-700">
-              <h2 className="text-white font-semibold">Convidar Usuário</h2>
-              <button onClick={() => setModal(false)}><X className="h-5 w-5 text-slate-400 hover:text-white" /></button>
+          <div className="bg-white rounded-xl border border-gray-200 w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <h2 className="text-gray-900 font-semibold">Convidar Usuário</h2>
+              <button onClick={() => setModal(false)}><X className="h-5 w-5 text-gray-400 hover:text-gray-900" /></button>
             </div>
             <div className="p-5 space-y-4">
               {msg && <p className="text-red-400 text-sm">{msg}</p>}
               <div>
-                <label className="block text-xs text-slate-400 mb-1">E-mail *</label>
+                <label className="block text-xs text-gray-400 mb-1">E-mail *</label>
                 <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                   placeholder="usuario@empresa.com" type="email"
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500" />
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-purple-500" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nome (opcional)</label>
+                <label className="block text-xs text-gray-400 mb-1">Nome (opcional)</label>
                 <input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))}
                   placeholder="João Silva"
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500" />
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-purple-500" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Construtora *</label>
+                <label className="block text-xs text-gray-400 mb-1">Construtora *</label>
                 <select value={form.construtora_id} onChange={e => setForm(p => ({ ...p, construtora_id: e.target.value }))}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500">
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:border-purple-500">
                   <option value="">Selecione...</option>
                   {construtoras.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Perfil</label>
+                <label className="block text-xs text-gray-400 mb-1">Perfil</label>
                 <select value={form.perfil} onChange={e => setForm(p => ({ ...p, perfil: e.target.value }))}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500">
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:border-purple-500">
                   {PERFIS.map(p => <option key={p} value={p} className="capitalize">{p}</option>)}
                 </select>
               </div>
-              <p className="text-xs text-slate-500">Um link de convite será gerado. Compartilhe com o usuário para que ele crie sua senha.</p>
+              <p className="text-xs text-gray-500">Um link de convite será gerado. Compartilhe com o usuário para que ele crie sua senha.</p>
             </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-              <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancelar</button>
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
+              <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-900">Cancelar</button>
               <button onClick={enviarConvite} disabled={saving}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg disabled:opacity-50">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}

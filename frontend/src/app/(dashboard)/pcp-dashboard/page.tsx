@@ -100,7 +100,7 @@ function KpiMini({ label, value, icon: Icon, color, sub }: any) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white/90 p-4 flex items-center gap-3">
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
-        <Icon className="h-4 w-4 text-white" />
+        <Icon className="h-4 w-4 text-gray-900" />
       </div>
       <div>
         <p className="text-xl font-bold text-gray-900">{value}</p>
@@ -196,7 +196,7 @@ export default function PcpDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-blue-400" />
             Dashboard PCP
           </h1>
@@ -231,7 +231,7 @@ export default function PcpDashboardPage() {
         <select
           value={obraFiltro}
           onChange={e => trocarObra(e.target.value)}
-          className="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+          className="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
         >
           <option value="todas">Todas as obras</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
@@ -300,7 +300,7 @@ export default function PcpDashboardPage() {
               statusFiltro === s
                 ? 'bg-blue-600 border-blue-500 text-white'
                 : s === 'todos'
-                ? 'border-gray-300 text-gray-500 hover:border-slate-500'
+                ? 'border-gray-300 text-gray-500 hover:border-gray-300'
                 : clsx(STATUS_COLOR[s as StatusDesvio], 'hover:opacity-80')
             )}
           >
@@ -312,7 +312,7 @@ export default function PcpDashboardPage() {
       {/* Tabela de atividades */}
       <div className="rounded-xl border border-gray-200 bg-white/60 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white/90">
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <GitBranch className="h-4 w-4 text-gray-500" />
             Atividades — {atividadesFiltradas.length} {statusFiltro !== 'todos' ? STATUS_LABEL[statusFiltro as StatusDesvio] : 'total'}
           </h2>
@@ -364,7 +364,7 @@ export default function PcpDashboardPage() {
                   >
                     {/* Atividade */}
                     <td className="px-4 py-3 max-w-[200px]">
-                      <p className="font-medium text-white text-sm truncate">{a.nome}</p>
+                      <p className="font-medium text-gray-900 text-sm truncate">{a.nome}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {a.estrutura_obra?.nome && (
                           <span className="text-xs text-gray-400 truncate max-w-[120px]">
@@ -387,7 +387,7 @@ export default function PcpDashboardPage() {
                           {a.empreiteiros.razao_social}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-600">—</span>
+                        <span className="text-xs text-gray-600">—</span>
                       )}
                     </td>
 
@@ -407,7 +407,7 @@ export default function PcpDashboardPage() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-600">Sem prazo</span>
+                        <span className="text-xs text-gray-600">Sem prazo</span>
                       )}
                     </td>
 
@@ -418,7 +418,7 @@ export default function PcpDashboardPage() {
 
                     {/* % Executado */}
                     <td className="px-4 py-3 text-center">
-                      <span className="text-white font-medium text-sm">{a.percentual_exec || 0}%</span>
+                      <span className="text-gray-900 font-medium text-sm">{a.percentual_exec || 0}%</span>
                     </td>
 
                     {/* % Planejado */}
@@ -440,7 +440,7 @@ export default function PcpDashboardPage() {
                           {a.desvio > 0 ? '+' : ''}{a.desvio}%
                         </span>
                       ) : (
-                        <span className="text-slate-600 text-sm">—</span>
+                        <span className="text-gray-600 text-sm">—</span>
                       )}
                     </td>
 

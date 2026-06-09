@@ -39,8 +39,8 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Visão Geral</h1>
-        <p className="text-slate-400 text-sm mt-1">Painel de administração do SGO SaaS</p>
+        <h1 className="text-2xl font-bold text-gray-900">Visão Geral</h1>
+        <p className="text-gray-400 text-sm mt-1">Painel de administração do SGO SaaS</p>
       </div>
 
       {loading ? (
@@ -53,20 +53,20 @@ export default function AdminPage() {
             const Icon = c.icon
             return (
               <Link key={c.label} href={c.href}
-                className="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-purple-500 transition-colors block">
+                className="bg-white rounded-xl p-5 border border-gray-200 hover:border-purple-500 transition-colors block">
                 <div className={`inline-flex p-2 rounded-lg ${c.color} mb-3`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <p className="text-2xl font-bold text-white">{c.value}</p>
-                <p className="text-sm text-slate-400 mt-0.5">{c.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{c.value}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{c.label}</p>
               </Link>
             )
           })}
         </div>
       )}
 
-      <div className="bg-slate-800 rounded-xl border border-slate-700 p-5">
-        <h2 className="text-sm font-semibold text-white mb-3">Ações Rápidas</h2>
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">Ações Rápidas</h2>
         <div className="flex flex-wrap gap-3">
           <Link href="/admin/construtoras" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
             + Nova Construtora
@@ -74,7 +74,7 @@ export default function AdminPage() {
           <Link href="/admin/usuarios" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors">
             + Convidar Usuário
           </Link>
-          <Link href="/admin/planos" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">
+          <Link href="/admin/planos" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm rounded-lg transition-colors">
             Gerenciar Planos
           </Link>
         </div>

@@ -120,7 +120,7 @@ export default function EmpreiteirosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Empreiteiros</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Empreiteiros</h1>
           <p className="text-sm text-gray-500 mt-1">{empreiteiros.length} empreiteiro(s) cadastrado(s)</p>
         </div>
         <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function EmpreiteirosPage() {
         <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>
       ) : empreiteiros.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white/60 p-12 text-center">
-          <HardHat className="h-12 w-12 mx-auto mb-3 text-slate-600" />
+          <HardHat className="h-12 w-12 mx-auto mb-3 text-gray-600" />
           <p className="text-gray-500">Nenhum empreiteiro cadastrado.</p>
         </div>
       ) : (
@@ -161,9 +161,9 @@ export default function EmpreiteirosPage() {
                     {((e.nome_fantasia || e.razao_social) ?? '?').charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">{e.nome_fantasia || e.razao_social}</p>
+                    <p className="font-semibold text-gray-900 truncate">{e.nome_fantasia || e.razao_social}</p>
                     {e.nome_fantasia && <p className="text-xs text-gray-400 truncate">{e.razao_social}</p>}
-                    {e.cnpj && <p className="text-xs text-slate-600 mt-0.5">CNPJ: {e.cnpj}</p>}
+                    {e.cnpj && <p className="text-xs text-gray-600 mt-0.5">CNPJ: {e.cnpj}</p>}
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
                     <span className={clsx('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border', e.ativo ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/40' : 'bg-gray-100 text-gray-500 border-gray-300')}>
@@ -199,7 +199,7 @@ export default function EmpreiteirosPage() {
                     {accs.map((a: any) => (
                       <p key={a.id} className="text-xs text-blue-300 truncate flex items-center gap-1.5">
                         <UserCheck className="h-3 w-3 shrink-0" />{a.email}
-                        <span className="text-slate-600">·</span>
+                        <span className="text-gray-600">·</span>
                         <span className="text-gray-500 capitalize">{a.perfil}</span>
                       </p>
                     ))}
@@ -225,8 +225,8 @@ export default function EmpreiteirosPage() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-white">Novo Empreiteiro</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white"><X className="h-5 w-5" /></button>
+              <h2 className="text-lg font-semibold text-gray-900">Novo Empreiteiro</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-900"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               {[
@@ -242,7 +242,7 @@ export default function EmpreiteirosPage() {
                     value={(form as any)[f.name]}
                     onChange={e => setForm(p => ({ ...p, [e.target.name]: e.target.value }))}
                     placeholder={f.placeholder}
-                    className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                    className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
                   />
                 </div>
               ))}
@@ -258,7 +258,7 @@ export default function EmpreiteirosPage() {
                       value={(form as any)[f.name]}
                       onChange={e => setForm(p => ({ ...p, [e.target.name]: e.target.value }))}
                       placeholder={f.placeholder}
-                      className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 ))}
@@ -280,19 +280,19 @@ export default function EmpreiteirosPage() {
           <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <div>
-                <h2 className="font-semibold text-white flex items-center gap-2">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-blue-400" /> Criar Acesso ao Portal
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">{empAcesso.nome_fantasia || empAcesso.razao_social}</p>
               </div>
-              <button onClick={() => setShowAcesso(false)} className="text-gray-500 hover:text-white"><X className="h-5 w-5" /></button>
+              <button onClick={() => setShowAcesso(false)} className="text-gray-500 hover:text-gray-900"><X className="h-5 w-5" /></button>
             </div>
 
             {acessoCriado ? (
               <div className="px-5 py-8 text-center">
                 <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-                <h3 className="font-semibold text-white text-lg mb-2">Acesso criado!</h3>
-                <p className="text-gray-500 text-sm mb-1">E-mail: <strong className="text-white">{acessoForm.email}</strong></p>
+                <h3 className="font-semibold text-gray-900 text-lg mb-2">Acesso criado!</h3>
+                <p className="text-gray-500 text-sm mb-1">E-mail: <strong className="text-gray-900">{acessoForm.email}</strong></p>
                 <p className="text-gray-500 text-sm mb-5">O empreiteiro já pode entrar em <strong className="text-blue-400">/portal/login</strong></p>
                 <button onClick={() => setShowAcesso(false)} className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">Fechar</button>
               </div>
@@ -306,13 +306,13 @@ export default function EmpreiteirosPage() {
                 {/* Nome */}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Nome do responsável *</label>
-                  <input type="text" value={acessoForm.nome} required onChange={e => setAcessoForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500" />
+                  <input type="text" value={acessoForm.nome} required onChange={e => setAcessoForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500" />
                 </div>
 
                 {/* Email */}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">E-mail de acesso *</label>
-                  <input type="email" value={acessoForm.email} required onChange={e => setAcessoForm(f => ({ ...f, email: e.target.value }))} placeholder="email@empresa.com" className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500" />
+                  <input type="email" value={acessoForm.email} required onChange={e => setAcessoForm(f => ({ ...f, email: e.target.value }))} placeholder="email@empresa.com" className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500" />
                 </div>
 
                 {/* Senha */}
@@ -326,9 +326,9 @@ export default function EmpreiteirosPage() {
                       required minLength={6}
                       onChange={e => setAcessoForm(f => ({ ...f, senha: e.target.value }))}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full rounded-lg bg-gray-100 border border-gray-300 pl-9 pr-10 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      className="w-full rounded-lg bg-gray-100 border border-gray-300 pl-9 pr-10 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
                     />
-                    <button type="button" onClick={() => setMostrarSenha(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    <button type="button" onClick={() => setMostrarSenha(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900">
                       {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
@@ -345,7 +345,7 @@ export default function EmpreiteirosPage() {
                       required
                       onChange={e => setAcessoForm(f => ({ ...f, confirma: e.target.value }))}
                       placeholder="Repita a senha"
-                      className={clsx('w-full rounded-lg bg-gray-100 border pl-9 pr-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none', acessoForm.confirma && acessoForm.senha !== acessoForm.confirma ? 'border-red-500' : 'border-gray-300 focus:border-blue-500')}
+                      className={clsx('w-full rounded-lg bg-gray-100 border pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none', acessoForm.confirma && acessoForm.senha !== acessoForm.confirma ? 'border-red-500' : 'border-gray-300 focus:border-blue-500')}
                     />
                   </div>
                   {acessoForm.confirma && acessoForm.senha !== acessoForm.confirma && (

@@ -77,7 +77,7 @@ export default function EfetivoDashboardPage() {
             </p>
           </div>
           <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
-            <Users className="h-6 w-6 text-white" />
+            <Users className="h-6 w-6 text-gray-900" />
           </div>
         </div>
       </div>

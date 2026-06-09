@@ -59,7 +59,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-100">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 shadow-sm">
-          <Building2 className="h-5 w-5 text-white" />
+          <Building2 className="h-5 w-5 text-gray-900" />
         </div>
         <div>
           <p className="text-sm font-bold text-gray-900">SGO</p>

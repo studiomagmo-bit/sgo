@@ -27,24 +27,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [user, loading, router])
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-900">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
     </div>
   )
   if (!user || (user as any).perfil_sistema !== 'superadmin') return null
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar Admin */}
-      <aside className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-slate-900 border-r border-slate-700">
+      <aside className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-gray-50 border-r border-gray-200">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-700">
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-200">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-600">
-            <Shield className="h-5 w-5 text-white" />
+            <Shield className="h-5 w-5 text-gray-900" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">SGO Admin</p>
-            <p className="text-xs text-slate-400">Painel SuperAdmin</p>
+            <p className="text-sm font-bold text-gray-900">SGO Admin</p>
+            <p className="text-xs text-gray-400">Painel SuperAdmin</p>
           </div>
         </div>
 
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-purple-600 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    : 'text-gray-400 hover:bg-white hover:text-gray-900'
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -72,10 +72,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
 
           {/* Voltar ao app */}
-          <div className="pt-4 border-t border-slate-700 mt-4">
+          <div className="pt-4 border-t border-gray-200 mt-4">
             <Link
               href="/dashboard"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-white hover:text-gray-900 transition-colors"
             >
               <LayoutDashboard className="h-4 w-4" />
               Voltar ao SGO
@@ -84,13 +84,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-slate-700 p-3">
+        <div className="border-t border-gray-200 p-3">
           <div className="flex items-center gap-3 px-3 py-2 mb-1">
             <div className="h-7 w-7 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
               {user?.nome?.charAt(0).toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">{user?.nome}</p>
+              <p className="text-xs font-medium text-gray-900 truncate">{user?.nome}</p>
               <p className="text-[10px] text-purple-400">superadmin</p>
             </div>
           </div>

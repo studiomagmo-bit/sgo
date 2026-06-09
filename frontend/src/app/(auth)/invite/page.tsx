@@ -79,17 +79,17 @@ export default function InvitePage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
     </div>
   )
 
   if (notFound) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center max-w-sm w-full">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center max-w-sm w-full">
         <div className="text-4xl mb-4">❌</div>
-        <h1 className="text-white font-bold text-lg mb-2">Convite inválido</h1>
-        <p className="text-slate-400 text-sm">Este convite não existe, já foi utilizado ou expirou.</p>
+        <h1 className="text-gray-900 font-bold text-lg mb-2">Convite inválido</h1>
+        <p className="text-gray-400 text-sm">Este convite não existe, já foi utilizado ou expirou.</p>
         <button onClick={() => router.push('/login')}
           className="mt-5 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
           Ir para o Login
@@ -99,26 +99,26 @@ export default function InvitePage() {
   )
 
   if (done) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center max-w-sm w-full">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center max-w-sm w-full">
         <div className="h-16 w-16 rounded-full bg-emerald-600 flex items-center justify-center mx-auto mb-4">
-          <Check className="h-8 w-8 text-white" />
+          <Check className="h-8 w-8 text-gray-900" />
         </div>
-        <h1 className="text-white font-bold text-lg mb-2">Conta criada! 🎉</h1>
-        <p className="text-slate-400 text-sm">Bem-vindo ao SGO. Redirecionando para o login...</p>
+        <h1 className="text-gray-900 font-bold text-lg mb-2">Conta criada! 🎉</h1>
+        <p className="text-gray-400 text-sm">Bem-vindo ao SGO. Redirecionando para o login...</p>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-md overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white border border-gray-200 rounded-xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6 text-center">
           <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-3">
-            <Building2 className="h-6 w-6 text-white" />
+            <Building2 className="h-6 w-6 text-gray-900" />
           </div>
-          <h1 className="text-white font-bold text-xl">Bem-vindo ao SGO</h1>
+          <h1 className="text-gray-900 font-bold text-xl">Bem-vindo ao SGO</h1>
           <p className="text-blue-200 text-sm mt-1">
             Você foi convidado para <span className="font-semibold">{convite?.construtoras?.nome}</span>
           </p>
@@ -126,9 +126,9 @@ export default function InvitePage() {
 
         {/* Form */}
         <div className="p-6 space-y-4">
-          <div className="bg-slate-700/50 rounded-lg p-3 text-sm">
-            <p className="text-slate-400">E-mail: <span className="text-white">{convite?.email}</span></p>
-            <p className="text-slate-400">Perfil: <span className="text-white capitalize">{convite?.perfil}</span></p>
+          <div className="bg-gray-100 rounded-lg p-3 text-sm">
+            <p className="text-gray-400">E-mail: <span className="text-gray-900">{convite?.email}</span></p>
+            <p className="text-gray-400">Perfil: <span className="text-gray-900 capitalize">{convite?.perfil}</span></p>
           </div>
 
           {msg && (
@@ -136,32 +136,32 @@ export default function InvitePage() {
           )}
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1.5">Seu nome completo *</label>
+            <label className="block text-xs text-gray-400 mb-1.5">Seu nome completo *</label>
             <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
               placeholder="João da Silva"
-              className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
+              className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500" />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1.5">Criar senha *</label>
+            <label className="block text-xs text-gray-400 mb-1.5">Criar senha *</label>
             <div className="relative">
               <input type={showPw ? 'text' : 'password'} value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full px-3 py-2.5 pr-10 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
+                className="w-full px-3 py-2.5 pr-10 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500" />
               <button onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900">
                 {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1.5">Confirmar senha *</label>
+            <label className="block text-xs text-gray-400 mb-1.5">Confirmar senha *</label>
             <input type="password" value={form.confirm}
               onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
               placeholder="Repita a senha"
-              className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
+              className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500" />
           </div>
 
           <button onClick={aceitar} disabled={saving}

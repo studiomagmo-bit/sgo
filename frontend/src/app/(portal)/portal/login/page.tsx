@@ -33,20 +33,20 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 mb-4">
-            <HardHat className="h-9 w-9 text-white" />
+            <HardHat className="h-9 w-9 text-gray-900" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Portal do Empreiteiro</h1>
-          <p className="text-slate-400 text-sm mt-1">SGO — Sistema de Gestão de Obras</p>
+          <h1 className="text-2xl font-bold text-gray-900">Portal do Empreiteiro</h1>
+          <p className="text-gray-400 text-sm mt-1">SGO — Sistema de Gestão de Obras</p>
         </div>
 
         {/* Card login */}
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-6 shadow-2xl">
-          <h2 className="text-lg font-semibold text-white mb-5">Entrar</h2>
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl">
+          <h2 className="text-lg font-semibold text-gray-900 mb-5">Entrar</h2>
 
           {erro && (
             <div className="mb-4 rounded-lg bg-red-900/40 border border-red-700 px-3 py-2.5 text-sm text-red-300">
@@ -56,9 +56,9 @@ export default function PortalLoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">E-mail</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">E-mail</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <input
                   type="email"
                   value={email}
@@ -66,22 +66,22 @@ export default function PortalLoginPage() {
                   required
                   autoFocus
                   placeholder="seu@email.com"
-                  className="w-full rounded-lg bg-slate-700 border border-slate-600 pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-lg bg-gray-100 border border-gray-200 pl-9 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Senha</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">Senha</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <input
                   type="password"
                   value={senha}
                   onChange={e => setSenha(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full rounded-lg bg-slate-700 border border-slate-600 pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-lg bg-gray-100 border border-gray-200 pl-9 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -96,7 +96,7 @@ export default function PortalLoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
+        <p className="text-center text-xs text-gray-600 mt-6">
           Acesso exclusivo para empreiteiros cadastrados.
         </p>
       </div>

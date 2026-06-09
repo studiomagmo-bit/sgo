@@ -7,7 +7,7 @@ import { clsx } from 'clsx'
 
 // ── Cores por status ──────────────────────────────────────────
 const STATUS_COLOR: Record<string, { bar: string; text: string; bg: string }> = {
-  planejada:    { bar: 'bg-slate-300',    text: 'text-slate-600',   bg: 'bg-slate-50'   },
+  planejada:    { bar: 'bg-slate-300',    text: 'text-gray-600',   bg: 'bg-slate-50'   },
   em_andamento: { bar: 'bg-blue-500',     text: 'text-blue-700',    bg: 'bg-blue-50'    },
   concluida:    { bar: 'bg-emerald-500',  text: 'text-emerald-700', bg: 'bg-emerald-50' },
   bloqueada:    { bar: 'bg-red-400',      text: 'text-red-700',     bg: 'bg-red-50'     },
@@ -308,7 +308,7 @@ export default function GanttPage() {
                               <div className="h-full rounded-md bg-black/10" style={{ width: `${pct}%` }} />
                               {/* Label */}
                               {bar.width > 50 && (
-                                <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-semibold text-white truncate drop-shadow">
+                                <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-semibold text-gray-900 truncate drop-shadow">
                                   {a.nome}
                                 </span>
                               )}
@@ -435,7 +435,7 @@ export default function GanttPage() {
                         left: `${Math.max(previewBar.left / (totalDias * dayWidth) * 100, 0)}%`,
                         width: `${Math.max(previewBar.width / (totalDias * dayWidth) * 100, 1)}%`,
                       }}>
-                      <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-bold truncate px-1">
+                      <span className="absolute inset-0 flex items-center justify-center text-[9px] text-gray-900 font-bold truncate px-1">
                         {novaAtividade.nome || 'Nova atividade'}
                       </span>
                     </div>
