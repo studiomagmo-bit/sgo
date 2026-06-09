@@ -19,7 +19,14 @@ export default function LoginPage() {
       await login(email, password)
       router.push('/dashboard')
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Credenciais inválidas.')
+      const msg = err?.message || ''
+      if (msg.includes('Invalid login') || msg.includes('invalid')) {
+        toast.error('E-mail ou senha incorretos.')
+      } else if (msg.includes('Email not confirmed')) {
+        toast.error('Confirme seu e-mail antes de acessar.')
+      } else {
+        toast.error(msg || 'Erro ao fazer login. Tente novamente.')
+      }
     } finally {
       setLoading(false)
     }
