@@ -6,11 +6,13 @@ import {
   Building2, LayoutDashboard, GitBranch, Users, ClipboardList,
   HardHat, CheckCircle, AlertTriangle, DollarSign, Truck,
   BookOpen, LogOut, Settings, Shield,
-  UserRound, PieChart, BarChart3, UserCog, ChevronRight,
+  PieChart, BarChart3, UserCog, ChevronRight,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
-const nav = [
+// ── Menus por perfil ──────────────────────────────────────────
+// GESTOR/ADMIN: tudo
+const NAV_GESTOR = [
   { label: 'Dashboard',        icon: LayoutDashboard, href: '/dashboard' },
   { label: 'Dashboard PCP',    icon: PieChart,        href: '/pcp-dashboard' },
   { label: 'Obras',            icon: Building2,       href: '/obras' },
@@ -24,9 +26,8 @@ const nav = [
   { label: 'Pendências',       icon: AlertTriangle,   href: '/pendencias' },
   { divider: 'Recursos' },
   { label: 'Equipamentos',     icon: Truck,           href: '/equipamentos' },
-  { divider: 'Comercial' },
+  { divider: 'Empreiteiros' },
   { label: 'Empreiteiros',     icon: HardHat,         href: '/empreiteiros' },
-  { label: 'Colaboradores',    icon: UserRound,       href: '/colaboradores' },
   { label: 'Efetivo Geral',    icon: Users,           href: '/empreiteiro-portal' },
   { label: 'Medições',         icon: DollarSign,      href: '/medicoes' },
   { divider: 'Registros' },
@@ -34,6 +35,40 @@ const nav = [
   { divider: 'Configurações' },
   { label: 'Usuários',         icon: UserCog,         href: '/usuarios' },
   { label: 'Configurações',    icon: Settings,        href: '/configuracoes' },
+]
+
+// ENGENHEIRO: sem Obras (criar/listar global), sem seção Comercial completa
+// Só vê suas obras vinculadas via filtro já aplicado nas queries
+const NAV_ENGENHEIRO = [
+  { label: 'Dashboard',        icon: LayoutDashboard, href: '/dashboard' },
+  { label: 'Dashboard PCP',    icon: PieChart,        href: '/pcp-dashboard' },
+  { divider: 'Planejamento' },
+  { label: 'PCP / Atividades', icon: GitBranch,       href: '/pcp' },
+  { label: 'Cronograma Gantt', icon: BarChart3,       href: '/pcp/gantt' },
+  { label: 'Efetivo Diário',   icon: Users,           href: '/efetivo' },
+  { label: 'Produções',        icon: ClipboardList,   href: '/producoes' },
+  { divider: 'Qualidade' },
+  { label: 'Inspeções',        icon: CheckCircle,     href: '/inspecoes' },
+  { label: 'Pendências',       icon: AlertTriangle,   href: '/pendencias' },
+  { divider: 'Empreiteiros' },
+  { label: 'Empreiteiros',     icon: HardHat,         href: '/empreiteiros' },
+  { divider: 'Registros' },
+  { label: 'Diário de Obra',   icon: BookOpen,        href: '/diario' },
+]
+
+// MESTRE/ENCARREGADO: foco operacional
+const NAV_MESTRE = [
+  { label: 'Dashboard',        icon: LayoutDashboard, href: '/dashboard' },
+  { divider: 'Planejamento' },
+  { label: 'PCP / Atividades', icon: GitBranch,       href: '/pcp' },
+  { label: 'Cronograma Gantt', icon: BarChart3,       href: '/pcp/gantt' },
+  { label: 'Efetivo Diário',   icon: Users,           href: '/efetivo' },
+  { label: 'Produções',        icon: ClipboardList,   href: '/producoes' },
+  { divider: 'Qualidade' },
+  { label: 'Inspeções',        icon: CheckCircle,     href: '/inspecoes' },
+  { label: 'Pendências',       icon: AlertTriangle,   href: '/pendencias' },
+  { divider: 'Registros' },
+  { label: 'Diário de Obra',   icon: BookOpen,        href: '/diario' },
 ]
 
 const ROLE_BADGE: Record<string, { label: string; bg: string; text: string }> = {
@@ -47,12 +82,17 @@ const ROLE_BADGE: Record<string, { label: string; bg: string; text: string }> = 
 }
 
 export function Sidebar() {
-  const pathname  = usePathname()
+  const pathname = usePathname()
   const { user, logout } = useAuth()
   const isSuperAdmin = (user as any)?.perfil_sistema === 'superadmin'
   const perfil       = isSuperAdmin ? 'superadmin' : ((user as any)?.perfil ?? 'engenheiro')
   const badge        = ROLE_BADGE[perfil] ?? { label: perfil, bg: 'bg-gray-500', text: 'text-white' }
   const inicial      = user?.nome?.charAt(0).toUpperCase() || 'U'
+
+  // Escolhe o menu correto por perfil
+  const isGestor  = ['administrador', 'gerente', 'superadmin'].includes(perfil)
+  const isMestre  = ['mestre', 'pcp', 'almoxarife'].includes(perfil)
+  const nav = isGestor ? NAV_GESTOR : isMestre ? NAV_MESTRE : NAV_ENGENHEIRO
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-white shadow-lg border-r border-gray-100">
@@ -122,10 +162,8 @@ export function Sidebar() {
           <span>Sair</span>
         </button>
         {isSuperAdmin && (
-          <Link
-            href="/admin"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-violet-500 hover:text-violet-700 hover:bg-violet-50 transition-all"
-          >
+          <Link href="/admin"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-violet-500 hover:text-violet-700 hover:bg-violet-50 transition-all">
             <Shield className="h-4 w-4" />
             <span>Painel Admin</span>
           </Link>

@@ -131,7 +131,7 @@ export const estruturaObra = {
 // ─── ATIVIDADES (PCP) ─────────────────────────────────────────
 export const atividades = {
   listar: async (params?: any) => {
-    let q = supabase.from('atividades').select('*, obras(nome)').order('criado_em', { ascending: false })
+    let q = supabase.from('atividades').select('*, obras(nome), empreiteiros(razao_social), estrutura_obra:estrutura_id(nome), atividade_dependencias!atividade_id(atividade_depende_id)').order('criado_em', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
     if (params?.status)  q = q.eq('status', params.status)
     const { data, error } = await q

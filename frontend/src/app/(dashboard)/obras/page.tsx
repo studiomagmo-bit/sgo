@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { obras as obrasApi } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import Link from 'next/link'
 import { Plus, Building2, MapPin, Calendar, Loader2, Search } from 'lucide-react'
 import type { Obra } from '@/types'
@@ -15,6 +16,8 @@ const statusLabel: Record<string, { label: string; cls: string }> = {
 }
 
 export default function ObrasPage() {
+  const { user } = useAuth()
+  const isGestor = ['administrador', 'gerente'].includes((user as any)?.perfil ?? '')
   const [obras, setObras]       = useState<Obra[]>([])
   const [loading, setLoading]   = useState(true)
   const [busca, setBusca]       = useState('')
@@ -38,12 +41,14 @@ export default function ObrasPage() {
           <h1 className="text-2xl font-bold text-gray-900">Obras</h1>
           <p className="text-sm text-gray-500 mt-1">{obras.length} obra(s) cadastrada(s)</p>
         </div>
-        <Link
-          href="/obras/nova"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" /> Nova Obra
-        </Link>
+        {isGestor && (
+          <Link
+            href="/obras/nova"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Nova Obra
+          </Link>
+        )}
       </div>
 
       {/* Filtros */}

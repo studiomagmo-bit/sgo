@@ -7,6 +7,7 @@ import {
   empreiteiros as empreiteirosApi,
 } from '@/lib/sgoApi'
 import type { Atividade, Obra, StatusAtividade, PrioridadeAtividade } from '@/types'
+import { supabase } from '@/lib/supabase'
 import { Plus, Loader2, GitBranch, AlertTriangle, X, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { clsx } from 'clsx'
@@ -55,6 +56,7 @@ interface AtividadeForm {
   empreiteiro_id: string
   quantidade_prev: number
   unidade: string
+  dep_atividade_id: string   // atividade predecessora (vinculação em cascata)
 }
 
 const FORM_INICIAL: AtividadeForm = {
@@ -69,6 +71,7 @@ const FORM_INICIAL: AtividadeForm = {
   empreiteiro_id: '',
   quantidade_prev: 0,
   unidade: '',
+  dep_atividade_id: '',
 }
 
 // ─── Componente Campo ─────────────────────────────────────────
@@ -200,7 +203,7 @@ export default function PCPPage() {
 
     setSaving(true)
     try {
-      await pcpAtividades.criar({
+      const novaAtividade = await pcpAtividades.criar({
         nome:             form.nome.trim(),
         obra_id:          form.obra_id,
         status:           form.status,
@@ -217,6 +220,13 @@ export default function PCPPage() {
         bloqueada:        false,
         libera_medicao:   false,
       })
+      // Salva dependência se informada
+      if (form.dep_atividade_id && novaAtividade?.id) {
+        await supabase.from('atividade_dependencias').insert({
+          atividade_id:         novaAtividade.id,
+          atividade_depende_id: form.dep_atividade_id,
+        }).then(() => {})
+      }
       toast.success('Atividade criada com sucesso!')
       fecharModal()
       carregarAtividades()
@@ -550,6 +560,25 @@ export default function PCPPage() {
                   ))}
                 </select>
               </Campo>
+
+              {/* Dependência (A inicia quando B terminar) */}
+              {atividades.length > 0 && (
+                <Campo label="Inicia após (dependência)">
+                  <select
+                    value={form.dep_atividade_id}
+                    onChange={e => set('dep_atividade_id', e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">— Sem dependência (avulsa) —</option>
+                    {atividades
+                      .filter(a => a.id !== form.dep_atividade_id)
+                      .map(a => (
+                        <option key={a.id} value={a.id}>{a.nome}</option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Opcional: esta atividade só pode iniciar após a selecionada ser concluída</p>
+                </Campo>
+              )}
 
               {/* Status + Prioridade */}
               <div className="grid grid-cols-2 gap-3">

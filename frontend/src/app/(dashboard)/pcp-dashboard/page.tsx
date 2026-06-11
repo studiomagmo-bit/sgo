@@ -110,8 +110,13 @@ function nodeSummary(node: EstruturaNode): { total: number; atrasadas: number; e
   }
 }
 
-function TreeNode({ node, depth = 0 }: { node: EstruturaNode; depth?: number }) {
+function TreeNode({ node, depth = 0, expandAll }: { node: EstruturaNode; depth?: number; expandAll?: boolean | null }) {
   const [open, setOpen] = useState(depth < 2)
+  useEffect(() => {
+    if (expandAll === true)  setOpen(true)
+    if (expandAll === false) setOpen(false)
+  }, [expandAll])
+
   const sum = useMemo(() => nodeSummary(node), [node])
   const hasChildren = node.children.length > 0 || node.atividades.length > 0
 
@@ -213,7 +218,7 @@ function TreeNode({ node, depth = 0 }: { node: EstruturaNode; depth?: number }) 
           {/* Subnós */}
           {node.children
             .sort((a, b) => a.ordem - b.ordem)
-            .map(child => <TreeNode key={child.id} node={child} depth={depth + 1} />)
+            .map(child => <TreeNode key={child.id} node={child} depth={depth + 1} expandAll={expandAll} />)
           }
         </div>
       )}
@@ -259,6 +264,7 @@ export default function PcpDashboardPage() {
   const [viewMode, setViewMode]       = useState<'arvore' | 'tabela'>('arvore')
   const [loading, setLoading]         = useState(true)
   const [erro, setErro]               = useState('')
+  const [expandAllTree, setExpandAllTree] = useState<boolean | null>(null)  // null = default, true = all open, false = all closed
 
   async function carregar(obra_id?: string) {
     setLoading(true)
@@ -442,6 +448,20 @@ export default function PcpDashboardPage() {
               Estrutura da Obra
               {obraFiltro === 'todas' && <span className="text-xs text-gray-400 font-normal ml-1">(selecione uma obra para ver a árvore)</span>}
             </h2>
+            <div className="flex items-center gap-2">
+              {tree.length > 0 && (
+                <>
+                  <button onClick={() => setExpandAllTree(true)}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 transition-colors">
+                    <ChevronDown className="h-3.5 w-3.5" /> Expandir tudo
+                  </button>
+                  <button onClick={() => setExpandAllTree(false)}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 transition-colors">
+                    <ChevronRight className="h-3.5 w-3.5" /> Recolher tudo
+                  </button>
+                </>
+              )}
+            </div>
             {kpis.desvioMed !== null && (
               <div className={clsx('flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-bold border',
                 kpis.desvioMed > 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
@@ -466,7 +486,7 @@ export default function PcpDashboardPage() {
           ) : (
             <div className="space-y-1">
               {tree.sort((a, b) => a.ordem - b.ordem).map(node => (
-                <TreeNode key={node.id} node={node} depth={0} />
+                <TreeNode key={node.id} node={node} depth={0} expandAll={expandAllTree} />
               ))}
               <AtividadesSemEstrutura atividades={atividadesSemEstrutura} />
             </div>
