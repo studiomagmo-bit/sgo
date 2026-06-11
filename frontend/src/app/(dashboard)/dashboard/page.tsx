@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dashboard as dashboardApi, obras as obrasApi } from '@/lib/sgoApi'
+import { dashboard as dashboardApi } from '@/lib/sgoApi'
 import { useAuth } from '@/contexts/auth'
 import {
-  Building2, Users, GitBranch, CheckCircle2, AlertTriangle,
-  Clock, TrendingUp, DollarSign, HardHat, Loader2,
-  ArrowRight, CalendarDays, BarChart3, Activity,
+  Building2, CheckCircle2, AlertTriangle,
+  Clock, HardHat, Loader2,
+  ArrowRight, BarChart3, Activity,
 } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
@@ -25,28 +25,21 @@ const STATUS_LABEL: Record<string, string> = {
   pausada: 'Pausada', concluida: 'Concluída', cancelada: 'Cancelada',
 }
 const STATUS_DOT: Record<string, string> = {
-  planejamento: 'bg-amber-400', em_andamento: 'bg-blue-500',
-  pausada: 'bg-gray-400', concluida: 'bg-emerald-500', cancelada: 'bg-red-400',
-}
-const STATUS_ROW: Record<string, string> = {
-  planejamento: 'border-amber-200 bg-amber-50/50',
-  em_andamento: 'border-blue-200 bg-blue-50/30',
-  pausada: 'border-gray-200',
-  concluida: 'border-emerald-200 bg-emerald-50/30',
-  cancelada: 'border-red-200 bg-red-50/30',
+  planejamento: 'bg-amber-400', em_andamento: 'bg-blue-400',
+  pausada: 'bg-gray-400', concluida: 'bg-emerald-400', cancelada: 'bg-red-400',
 }
 
 // ── KPI Card ───────────────────────────────────────────────────
 function KpiCard({
-  title, value, icon: Icon, iconBg, iconColor, sub, href, trend, alert
+  title, value, icon: Icon, iconBg, iconColor, sub, href, alert
 }: {
   title: string; value: string | number; icon: any; iconBg: string; iconColor: string
-  sub?: string; href?: string; trend?: number; alert?: boolean
+  sub?: string; href?: string; alert?: boolean
 }) {
   const content = (
     <div className={clsx(
       'group rounded-2xl border bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200',
-      alert ? 'border-red-200 bg-red-50/30' : 'border-gray-100'
+      alert ? 'border-red-200 bg-red-50/40' : 'border-gray-100'
     )}>
       <div className="flex items-start justify-between">
         <div className={clsx('flex h-11 w-11 items-center justify-center rounded-xl', iconBg)}>
@@ -83,6 +76,7 @@ export default function DashboardPage() {
   useEffect(() => {
     dashboardApi.executivo()
       .then(setData)
+      .catch(() => setData({ obras: [], atividades: [], pendencias: [], inspecoes: [], efetivosHoje: [], empreiteiros: [], medicoes: [] }))
       .finally(() => setLoading(false))
   }, [])
 
@@ -120,23 +114,22 @@ export default function DashboardPage() {
   const criticas        = atividades.filter((a: any) => a.prioridade === 'critica' && a.status !== 'concluida').length
 
   const obrasEnrich = obras.map((o: any) => {
-    const ats    = atividades.filter((a: any) => a.obra_id === o.id)
-    const conc   = ats.filter((a: any) => a.status === 'concluida').length
-    const perc   = ats.length ? Math.round(ats.reduce((s: number, a: any) => s + (a.percentual_exec || 0), 0) / ats.length) : (o.percentual_geral || 0)
-    const pends  = pendencias.filter((p: any) => p.obra_id === o.id).length
-    const efetivoHj = efetivosHoje.filter((e: any) => e.obra_id === o.id).length
-    const dr     = diasRestantes(o.data_fim_prev)
-    return { ...o, ats: ats.length, conc, perc, pends, efetivoHj, dr }
+    const ats       = atividades.filter((a: any) => a.obra_id === o.id)
+    const conc      = ats.filter((a: any) => a.status === 'concluida').length
+    const perc      = ats.length ? Math.round(ats.reduce((s: number, a: any) => s + (a.percentual_exec || 0), 0) / ats.length) : (o.percentual_geral || 0)
+    const pends     = pendencias.filter((p: any) => p.obra_id === o.id).length
+    const dr        = diasRestantes(o.data_fim_prev)
+    return { ...o, ats: ats.length, conc, perc, pends, dr }
   })
 
   return (
-    <div className="space-y-6 max-w-[1400px]">
+    <div className="space-y-6 w-full">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-200">
+      {/* ── Header azul ────────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-100">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold capitalize">
+            <h1 className="text-2xl font-bold capitalize text-white">
               Olá, {user?.nome?.split(' ')[0] || 'Gestor'} 👋
             </h1>
             <p className="text-blue-100 text-sm mt-1 capitalize">
@@ -144,7 +137,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2.5 text-sm font-medium">
+            <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2.5 text-sm font-medium text-white">
               <Activity className="h-4 w-4" />
               <span>{obrasAtivas} obras em andamento</span>
             </div>
@@ -158,24 +151,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Mini stats no header */}
+        {/* Mini stats — texto BRANCO no fundo azul */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
           {[
-            { label: 'Obras Ativas',    value: obrasAtivas,           sub: `${obras.length} total` },
-            { label: 'Efetivo Hoje',    value: efetivosHoje.length,   sub: 'registros do dia' },
-            { label: 'Execução Média',  value: `${percMedio}%`,       sub: `${atividades.length} atividades` },
-            { label: 'Medições Aprov.', value: fmtBRL(valorMed),      sub: 'valor aprovado/pago' },
+            { label: 'Obras Ativas',    value: obrasAtivas,         sub: `${obras.length} total` },
+            { label: 'Efetivo Hoje',    value: efetivosHoje.length, sub: 'registros do dia' },
+            { label: 'Execução Média',  value: `${percMedio}%`,     sub: `${atividades.length} atividades` },
+            { label: 'Medições Aprov.', value: fmtBRL(valorMed),    sub: 'aprovado/pago' },
           ].map(s => (
-            <div key={s.label} className="bg-white/15 rounded-xl px-4 py-3">
-              <p className="text-xl font-bold text-gray-900">{s.value}</p>
-              <p className="text-xs text-blue-100 mt-0.5">{s.label}</p>
-              <p className="text-[10px] text-blue-200/70 mt-0.5">{s.sub}</p>
+            <div key={s.label} className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10">
+              <p className="text-xl font-bold text-white">{s.value}</p>
+              <p className="text-xs text-blue-100 mt-0.5 font-medium">{s.label}</p>
+              <p className="text-[10px] text-blue-200/80 mt-0.5">{s.sub}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── KPIs ────────────────────────────────────────────── */}
+      {/* ── KPIs ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           title="Atividades Concluídas" value={fmt(atividadesConc)}
@@ -199,7 +192,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Linha principal ─────────────────────────────────── */}
+      {/* ── Linha principal 3 colunas ───────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* Obras por status */}
@@ -211,9 +204,9 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {([
               ['em_andamento', 'Em andamento', 'bg-blue-500'],
-              ['planejamento',  'Planejamento', 'bg-amber-400'],
-              ['concluida',     'Concluída',    'bg-emerald-500'],
-              ['pausada',       'Pausada',      'bg-gray-400'],
+              ['planejamento',  'Planejamento',  'bg-amber-400'],
+              ['concluida',     'Concluída',     'bg-emerald-500'],
+              ['pausada',       'Pausada',        'bg-gray-400'],
             ] as const).map(([key, label, color]) => {
               const count = obras.filter((o: any) => o.status === key).length
               const pct   = obras.length ? (count / obras.length) * 100 : 0
@@ -234,7 +227,10 @@ export default function DashboardPage() {
           {obras.length === 0 && (
             <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-center gap-2.5">
               <Building2 className="h-4 w-4 text-blue-400 shrink-0" />
-              <p className="text-sm text-blue-700">Nenhuma obra cadastrada ainda. <Link href="/obras" className="font-semibold underline hover:text-blue-900">Criar primeira obra →</Link></p>
+              <p className="text-sm text-blue-700">
+                Nenhuma obra cadastrada ainda.{' '}
+                <Link href="/obras/nova" className="font-semibold underline hover:text-blue-900">Criar primeira obra →</Link>
+              </p>
             </div>
           )}
         </div>
@@ -247,10 +243,10 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-3">
             {([
-              ['concluida',    'Concluída',     'bg-emerald-500'],
-              ['em_andamento', 'Em andamento',  'bg-blue-500'],
-              ['planejada',    'Planejada',     'bg-gray-300'],
-              ['bloqueada',    'Bloqueada',     'bg-red-400'],
+              ['concluida',    'Concluída',    'bg-emerald-500'],
+              ['em_andamento', 'Em andamento', 'bg-blue-500'],
+              ['planejada',    'Planejada',    'bg-gray-300'],
+              ['bloqueada',    'Bloqueada',    'bg-red-400'],
             ] as const).map(([key, label, color]) => {
               const count = atividades.filter((a: any) => a.status === key).length
               const pct   = atividades.length ? (count / atividades.length) * 100 : 0
@@ -263,7 +259,9 @@ export default function DashboardPage() {
                     </div>
                     <span className="font-semibold text-gray-800">
                       {count}
-                      {atividades.length > 0 && <span className="text-gray-400 font-normal ml-1">({Math.round(pct)}%)</span>}
+                      {atividades.length > 0 && (
+                        <span className="text-gray-400 font-normal ml-1">({Math.round(pct)}%)</span>
+                      )}
                     </span>
                   </div>
                   <ProgressBar value={pct} color={color} />
@@ -276,17 +274,16 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Alertas + empreiteiros */}
+        {/* Alertas + resumo */}
         <div className="space-y-4">
-          {/* Alertas */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 text-sm mb-3">Alertas</h3>
             <div className="space-y-2">
               {[
-                { label: 'Atividades atrasadas', value: atividadesAtras, href: '/pcp',       color: 'text-red-600',    bg: 'bg-red-50',    icon: Clock },
-                { label: 'Prioridade crítica',   value: criticas,         href: '/pcp',       color: 'text-orange-600', bg: 'bg-orange-50', icon: AlertTriangle },
-                { label: 'Pendências abertas',   value: pendAbertas,      href: '/pendencias', color: 'text-amber-600', bg: 'bg-amber-50',  icon: AlertTriangle },
-                { label: 'Inspeções pendentes',  value: inspecPend,       href: '/inspecoes',  color: 'text-blue-600',  bg: 'bg-blue-50',   icon: CheckCircle2 },
+                { label: 'Atividades atrasadas', value: atividadesAtras, href: '/pcp',        color: 'text-red-600',    bg: 'bg-red-50',    icon: Clock },
+                { label: 'Prioridade crítica',   value: criticas,         href: '/pcp',        color: 'text-orange-600', bg: 'bg-orange-50', icon: AlertTriangle },
+                { label: 'Pendências abertas',   value: pendAbertas,      href: '/pendencias', color: 'text-amber-600',  bg: 'bg-amber-50',  icon: AlertTriangle },
+                { label: 'Inspeções pendentes',  value: inspecPend,       href: '/inspecoes',  color: 'text-blue-600',   bg: 'bg-blue-50',   icon: CheckCircle2 },
               ].map(item => (
                 <Link
                   key={item.label}
@@ -308,13 +305,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Resumo rápido */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 text-sm mb-3">Resumo Geral</h3>
             <div className="space-y-2 text-xs">
               {[
                 { label: 'Empreiteiros ativos',  value: empreiteiros.length, href: '/empreiteiros', icon: HardHat },
-                { label: 'Inspecões aprovadas',  value: inspecoes.filter((i: any) => i.status === 'aprovada').length, href: '/inspecoes', icon: CheckCircle2 },
+                { label: 'Inspeções aprovadas',  value: inspecoes.filter((i: any) => i.status === 'aprovada').length, href: '/inspecoes', icon: CheckCircle2 },
                 { label: 'Obras concluídas',     value: obras.filter((o: any) => o.status === 'concluida').length, href: '/obras', icon: Building2 },
               ].map(r => (
                 <Link key={r.label} href={r.href} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0 hover:text-blue-600 transition-colors">
@@ -330,7 +326,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Tabela de obras ─────────────────────────────────── */}
+      {/* ── Tabela de obras ────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -372,11 +368,11 @@ export default function DashboardPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={clsx('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border', {
-                        'bg-blue-50 text-blue-700 border-blue-200':    o.status === 'em_andamento',
-                        'bg-amber-50 text-amber-700 border-amber-200':  o.status === 'planejamento',
+                        'bg-blue-50 text-blue-700 border-blue-200':        o.status === 'em_andamento',
+                        'bg-amber-50 text-amber-700 border-amber-200':     o.status === 'planejamento',
                         'bg-emerald-50 text-emerald-700 border-emerald-200': o.status === 'concluida',
-                        'bg-gray-50 text-gray-500 border-gray-200':    o.status === 'pausada',
-                        'bg-red-50 text-red-600 border-red-200':       o.status === 'cancelada',
+                        'bg-gray-50 text-gray-500 border-gray-200':        o.status === 'pausada',
+                        'bg-red-50 text-red-600 border-red-200':           o.status === 'cancelada',
                       })}>
                         <span className={clsx('inline-block w-1.5 h-1.5 rounded-full', STATUS_DOT[o.status])} />
                         {STATUS_LABEL[o.status] || o.status}
@@ -407,9 +403,18 @@ export default function DashboardPage() {
                     <td className="px-5 py-3.5">
                       {o.data_fim_prev ? (
                         <div>
-                          <p className="text-xs text-gray-500">{new Date(o.data_fim_prev + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
-                          <p className={clsx('text-xs font-semibold mt-0.5', o.dr === null ? '' : o.dr < 0 ? 'text-red-500' : o.dr < 15 ? 'text-amber-500' : 'text-emerald-600')}>
-                            {o.dr === null ? '' : o.dr < 0 ? `${Math.abs(o.dr)}d atrasado` : o.dr === 0 ? '⚠️ Hoje!' : `${o.dr}d restantes`}
+                          <p className="text-xs text-gray-500">
+                            {new Date(o.data_fim_prev + 'T12:00:00').toLocaleDateString('pt-BR')}
+                          </p>
+                          <p className={clsx('text-xs font-semibold mt-0.5',
+                            o.dr === null ? '' :
+                            o.dr < 0 ? 'text-red-500' :
+                            o.dr < 15 ? 'text-amber-500' : 'text-emerald-600'
+                          )}>
+                            {o.dr === null ? '' :
+                              o.dr < 0 ? `${Math.abs(o.dr)}d atrasado` :
+                              o.dr === 0 ? '⚠️ Hoje!' :
+                              `${o.dr}d restantes`}
                           </p>
                         </div>
                       ) : <span className="text-gray-300 text-xs">—</span>}
