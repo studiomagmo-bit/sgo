@@ -1,300 +1,480 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   producoes as producoesApi,
   obras     as obrasApi,
   atividades as pcpAtividades,
 } from '@/lib/sgoApi'
-import type { Obra, Atividade, TipoProducao } from '@/types'
-import { Plus, Loader2, ClipboardList, X } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/auth'
+import type { Obra, TipoProducao } from '@/types'
+import {
+  Plus, Loader2, ClipboardList, X, Check, CheckCircle2,
+  AlertTriangle, Flag, Clock, DollarSign, Play,
+} from 'lucide-react'
 import { toast } from 'sonner'
+import { clsx } from 'clsx'
 
 const hoje = () => new Date().toISOString().split('T')[0]
 
-interface ProducaoForm {
-  obra_id:      string
-  atividade_id: string
-  data:         string
-  tipo:         TipoProducao
-  quantidade:   number
-  observacoes:  string
+const STATUS_ATIVIDADE: Record<string, { label: string; cls: string; icon: any }> = {
+  planejada:           { label: 'Planejada',           cls: 'badge-cinza',    icon: Clock },
+  em_andamento:        { label: 'Em andamento',        cls: 'badge-azul',     icon: Play },
+  impedida:            { label: 'Impedida',             cls: 'badge-vermelho', icon: AlertTriangle },
+  pendente_validacao:  { label: 'Aguarda validação',   cls: 'badge-amarelo',  icon: Flag },
+  concluida:           { label: 'Concluída',            cls: 'badge-verde',    icon: CheckCircle2 },
+  reprovada:           { label: 'Reprovada',            cls: 'badge-vermelho', icon: X },
+  bloqueada:           { label: 'Bloqueada',            cls: 'badge-vermelho', icon: AlertTriangle },
 }
 
-const FORM_INICIAL: ProducaoForm = {
-  obra_id:      '',
-  atividade_id: '',
-  data:         hoje(),
-  tipo:         'producao',
-  quantidade:   0,
-  observacoes:  '',
-}
-
-function Campo({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-const inputCls =
-  'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-
-const TIPO_LABEL: Record<string, string> = {
-  producao: 'Produção',
-  hora:     'Hora',
-  diaria:   'Diária',
-}
+// ── Tabs ──────────────────────────────────────────────────────
+type Tab = 'validacao' | 'apontamentos' | 'novo'
 
 export default function ProducoesPage() {
+  const { user } = useAuth()
+  const [tab, setTab]             = useState<Tab>('validacao')
   const [obras, setObras]         = useState<Obra[]>([])
   const [obraId, setObraId]       = useState('')
-  // Tipagem ampliada para incluir campos do join
-  const [producoes, setProducoes] = useState<any[]>([])
-  const [loading, setLoading]     = useState(false)
 
-  const [showModal, setShowModal]     = useState(false)
-  const [form, setForm]               = useState<ProducaoForm>(FORM_INICIAL)
-  const [saving, setSaving]           = useState(false)
-  const [atividadesModal, setAtividadesModal] = useState<Atividade[]>([])
+  // Tab Validação — atividades pendentes de validação pelo engenheiro
+  const [pendentes, setPendentes] = useState<any[]>([])
+  const [loadingPend, setLoadingPend] = useState(false)
+  const [validando, setValidando] = useState<any>(null)
+  const [obsReprovacao, setObsReprovacao] = useState('')
+  const [percentualMed, setPercentualMed] = useState(100)
+  const [liberarMed, setLiberarMed] = useState(false)
+
+  // Tab Apontamentos — produções registradas
+  const [producoes, setProducoes] = useState<any[]>([])
+  const [loadingProd, setLoadingProd] = useState(false)
+
+  // Tab Novo apontamento
+  const [form, setForm]           = useState({ obra_id: '', atividade_id: '', data: hoje(), tipo: 'producao' as TipoProducao, quantidade: 0, observacoes: '' })
+  const [atividadesMod, setAtividadesMod] = useState<any[]>([])
   const [loadingAtiv, setLoadingAtiv] = useState(false)
+  const [saving, setSaving]       = useState(false)
 
   useEffect(() => { obrasApi.listar().then(setObras) }, [])
 
-  const carregarProducoes = () => {
+  const carregarPendentes = useCallback(() => {
     if (!obraId) return
-    setLoading(true)
-    producoesApi.listar({ obra_id: obraId }).then(setProducoes).finally(() => setLoading(false))
-  }
+    setLoadingPend(true)
+    supabase
+      .from('atividades')
+      .select('*, empreiteiros(razao_social), estrutura_obra(nome)')
+      .eq('obra_id', obraId)
+      .in('status', ['pendente_validacao', 'em_andamento', 'impedida', 'reprovada'])
+      .order('atualizado_em', { ascending: false })
+      .then(({ data }) => setPendentes(data ?? []))
+      .finally(() => setLoadingPend(false))
+  }, [obraId])
 
-  useEffect(() => { carregarProducoes() }, [obraId]) // eslint-disable-line react-hooks/exhaustive-deps
+  const carregarProducoes = useCallback(() => {
+    if (!obraId) return
+    setLoadingProd(true)
+    producoesApi.listar({ obra_id: obraId })
+      .then(setProducoes)
+      .finally(() => setLoadingProd(false))
+  }, [obraId])
 
-  const totalProd = producoes.reduce((s: number, p: any) => s + Number(p.quantidade), 0)
+  useEffect(() => {
+    if (!obraId) return
+    carregarPendentes()
+    carregarProducoes()
+  }, [obraId, carregarPendentes, carregarProducoes])
 
-  const abrirModal = () => {
-    setForm({ ...FORM_INICIAL, obra_id: obraId, data: hoje() })
-    setAtividadesModal([])
-    setShowModal(true)
-  }
-
-  const fecharModal = () => {
-    setShowModal(false)
-    setForm(FORM_INICIAL)
-    setAtividadesModal([])
-  }
-
-  const set = (field: keyof ProducaoForm, value: string | number) =>
-    setForm(prev => ({ ...prev, [field]: value }))
-
-  const handleObraModal = async (obraIdSelecionada: string) => {
-    set('obra_id', obraIdSelecionada)
-    set('atividade_id', '')
-    setAtividadesModal([])
-    if (!obraIdSelecionada) return
-    setLoadingAtiv(true)
+  // Validação: aprovar atividade como concluída
+  async function aprovar(atividade: any) {
     try {
-      const lista = await pcpAtividades.listar({ obra_id: obraIdSelecionada })
-      setAtividadesModal(lista)
-    } catch {
-      toast.error('Erro ao carregar atividades da obra')
-    } finally {
-      setLoadingAtiv(false)
+      const updates: any = { status: 'concluida', validado_por: user?.id, validado_em: new Date().toISOString() }
+      await supabase.from('atividades').update(updates).eq('id', atividade.id)
+
+      // Registra evento
+      await supabase.from('atividade_eventos').insert({
+        atividade_id: atividade.id, construtora_id: user?.construtora_id,
+        tipo: 'aprovada', descricao: 'Conclusão aprovada pelo engenheiro/mestre', criado_por: user?.id,
+      })
+
+      // Se liberado para medição, cria produção automaticamente
+      if (liberarMed) {
+        const qtd = atividade.quantidade_prev ? Number(atividade.quantidade_prev) * (percentualMed / 100) : 1
+        await supabase.from('producoes').insert({
+          obra_id: atividade.obra_id, construtora_id: user?.construtora_id,
+          atividade_id: atividade.id, data: hoje(),
+          tipo: 'producao', quantidade: qtd,
+          liberado_medicao: true, percentual_medicao: percentualMed,
+          liberado_por: user?.id, liberado_em: new Date().toISOString(),
+          observacoes: `Aprovado por ${user?.nome} — ${percentualMed}%`,
+        })
+      }
+
+      toast.success('Atividade aprovada' + (liberarMed ? ' e liberada para medição' : '') + '!')
+      setValidando(null)
+      carregarPendentes()
+      if (liberarMed) carregarProducoes()
+    } catch (e: any) {
+      toast.error(e.message)
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.obra_id)      { toast.error('Selecione uma obra'); return }
-    if (!form.atividade_id) { toast.error('Selecione uma atividade'); return }
-    if (!form.quantidade || form.quantidade <= 0) { toast.error('Informe uma quantidade válida'); return }
+  // Validação: reprovar
+  async function reprovar(atividade: any) {
+    if (!obsReprovacao.trim()) { toast.error('Descreva o que precisa ser corrigido'); return }
+    try {
+      await supabase.from('atividades').update({
+        status: 'reprovada', obs_reprovacao: obsReprovacao,
+      }).eq('id', atividade.id)
+      await supabase.from('atividade_eventos').insert({
+        atividade_id: atividade.id, construtora_id: user?.construtora_id,
+        tipo: 'reprovada', descricao: obsReprovacao, criado_por: user?.id,
+      })
+      toast.success('Reprovação registrada. Empreiteiro foi notificado.')
+      setValidando(null)
+      setObsReprovacao('')
+      carregarPendentes()
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
 
+  // Novo apontamento manual
+  async function salvarApontamento(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.obra_id || !form.atividade_id) { toast.error('Selecione obra e atividade'); return }
+    if (!form.quantidade || form.quantidade <= 0) { toast.error('Quantidade inválida'); return }
     setSaving(true)
     try {
-      await producoesApi.criar({
-        obra_id:      form.obra_id,
-        atividade_id: form.atividade_id,
-        data:         form.data,
-        tipo:         form.tipo,
-        quantidade:   Number(form.quantidade),
-        observacoes:  form.observacoes || null,
-      })
-      toast.success('Produção registrada com sucesso!')
-      fecharModal()
-      if (form.obra_id === obraId) carregarProducoes()
+      await producoesApi.criar({ ...form, quantidade: Number(form.quantidade), observacoes: form.observacoes || null })
+      toast.success('Apontamento registrado!')
+      setForm(f => ({ ...f, atividade_id: '', quantidade: 0, observacoes: '' }))
+      setTab('apontamentos')
+      carregarProducoes()
     } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao registrar produção')
+      toast.error(err?.message ?? 'Erro')
     } finally {
       setSaving(false)
     }
   }
 
+  const pendValidacao = pendentes.filter(a => a.status === 'pendente_validacao')
+  const emAndamento   = pendentes.filter(a => a.status === 'em_andamento')
+  const impedidas     = pendentes.filter(a => a.status === 'impedida')
+  const reprovadas    = pendentes.filter(a => a.status === 'reprovada')
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 w-full">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Produções</h1>
-          <p className="text-sm text-gray-500 mt-1">Apontamentos de produção por atividade</p>
+          <p className="text-sm text-gray-500 mt-1">Validações pendentes + apontamentos de produção</p>
         </div>
-        <button
-          onClick={abrirModal}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" /> Nova Produção
-        </button>
+        <select value={obraId} onChange={e => setObraId(e.target.value)}
+          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+          <option value="">Selecione uma obra...</option>
+          {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+        </select>
       </div>
 
-      <select
-        value={obraId}
-        onChange={e => setObraId(e.target.value)}
-        className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[220px]"
-      >
-        <option value="">Selecione uma obra...</option>
-        {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-      </select>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 gap-1">
+        {([
+          { id: 'validacao',    label: 'Validações', count: pendValidacao.length, alert: pendValidacao.length > 0 },
+          { id: 'apontamentos', label: 'Apontamentos', count: producoes.length },
+          { id: 'novo',         label: '+ Novo apontamento' },
+        ] as { id: Tab; label: string; count?: number; alert?: boolean }[]).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={clsx('flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
+              tab === t.id
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            )}>
+            {t.label}
+            {t.count !== undefined && t.count > 0 && (
+              <span className={clsx('rounded-full px-1.5 py-0.5 text-xs font-bold',
+                t.alert ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+              )}>{t.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
-      {obraId && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="kpi-card">
-            <p className="text-sm text-gray-500">Lançamentos</p>
-            <p className="text-2xl font-bold mt-1">{producoes.length}</p>
-          </div>
-          <div className="kpi-card">
-            <p className="text-sm text-gray-500">Total Produzido</p>
-            <p className="text-2xl font-bold mt-1">{totalProd.toLocaleString('pt-BR')}</p>
-          </div>
-        </div>
-      )}
-
-      {!obraId ? (
+      {!obraId && tab !== 'novo' ? (
         <div className="rounded-xl border bg-white p-12 text-center text-gray-400">
-          <ClipboardList className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+          <ClipboardList className="h-12 w-12 mx-auto mb-3 text-gray-200" />
           <p>Selecione uma obra para ver as produções</p>
         </div>
-      ) : loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
       ) : (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs text-gray-500 uppercase tracking-wider">
-              <tr>
-                {['Data','Atividade','Tipo','Quantidade','Observação'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {producoes.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
-                    Nenhuma produção encontrada
-                  </td>
-                </tr>
-              ) : producoes.map((p: any) => (
-                <tr key={p.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {new Date(p.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-                  </td>
-                  {/* Usa o join (atividades.nome) quando disponível */}
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {p.atividades?.nome ?? p.atividade_id?.substring(0, 8) + '…'}
-                  </td>
-                  <td className="px-4 py-3 capitalize">
-                    <span className="badge-azul">{TIPO_LABEL[p.tipo] ?? p.tipo}</span>
-                  </td>
-                  <td className="px-4 py-3 font-semibold">
-                    {Number(p.quantidade).toLocaleString('pt-BR')}
-                    {p.unidade ? ` ${p.unidade}` : ''}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">
-                    {p.observacoes || '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Nova Produção</h2>
-              <button onClick={fecharModal} className="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Fechar modal">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+        /* ── TAB: VALIDAÇÕES ──────────────────────────────────── */
+        tab === 'validacao' ? (
+          <div className="space-y-4">
+            {/* Aguardando validação */}
+            {pendValidacao.length > 0 && (
+              <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 bg-amber-50 border-b border-amber-100">
+                  <h3 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+                    <Flag className="h-4 w-4" /> Aguardando sua validação ({pendValidacao.length})
+                  </h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {pendValidacao.map(a => (
+                    <div key={a.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm">{a.nome}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {a.empreiteiros?.razao_social ?? '—'}
+                            {a.estrutura_obra?.nome && ` · ${a.estrutura_obra.nome}`}
+                          </p>
+                          {a.notas_execucao && (
+                            <p className="text-xs text-gray-500 mt-1 italic">"{a.notas_execucao}"</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1">
+                            {a.quantidade_prev ? `${a.quantidade_prev} ${a.unidade ?? ''} previstos` : ''}
+                          </p>
+                        </div>
+                        <button onClick={() => { setValidando(a); setObsReprovacao(''); setPercentualMed(100); setLiberarMed(false) }}
+                          className="shrink-0 flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+                          <Check className="h-3.5 w-3.5" /> Validar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <Campo label="Obra *">
-                <select
-                  required
-                  value={form.obra_id}
-                  onChange={e => handleObraModal(e.target.value)}
-                  className={inputCls}
-                >
+            {/* Impedidas */}
+            {impedidas.length > 0 && (
+              <div className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 bg-red-50 border-b border-red-100">
+                  <h3 className="text-sm font-semibold text-red-700 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" /> Impedimentos ativos ({impedidas.length})
+                  </h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {impedidas.map(a => (
+                    <div key={a.id} className="p-4">
+                      <p className="font-semibold text-gray-900 text-sm">{a.nome}</p>
+                      <p className="text-xs text-gray-400">{a.empreiteiros?.razao_social}</p>
+                      {a.motivo_impedimento && (
+                        <div className="mt-2 rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+                          <strong>{a.categoria_impedimento ?? 'Impedimento'}:</strong> {a.motivo_impedimento}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Em andamento */}
+            {emAndamento.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 bg-blue-50 border-b border-blue-100">
+                  <h3 className="text-sm font-semibold text-blue-700 flex items-center gap-2">
+                    <Play className="h-4 w-4" /> Em andamento ({emAndamento.length})
+                  </h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {emAndamento.map(a => (
+                    <div key={a.id} className="flex items-center gap-3 p-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{a.nome}</p>
+                        <p className="text-xs text-gray-400">{a.empreiteiros?.razao_social}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-20 bg-gray-100 rounded-full h-2">
+                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${a.percentual_exec || 0}%` }} />
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 w-8">{a.percentual_exec || 0}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {pendentes.length === 0 && !loadingPend && (
+              <div className="rounded-xl border bg-white p-10 text-center text-gray-400">
+                <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-gray-200" />
+                <p className="text-sm">Tudo em dia! Nenhuma atividade pendente.</p>
+              </div>
+            )}
+          </div>
+        )
+
+        /* ── TAB: APONTAMENTOS ─────────────────────────────────── */
+        : tab === 'apontamentos' ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {loadingProd ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs text-gray-400 uppercase tracking-wider">
+                  <tr>
+                    {['Data','Atividade','Tipo','Quantidade','Medição','Obs.'].map(h => (
+                      <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {producoes.length === 0 ? (
+                    <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">Nenhum apontamento registrado</td></tr>
+                  ) : producoes.map((p: any) => (
+                    <tr key={p.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 whitespace-nowrap">{new Date(p.data + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{p.atividades?.nome ?? '—'}</td>
+                      <td className="px-4 py-3"><span className="badge-azul capitalize">{p.tipo}</span></td>
+                      <td className="px-4 py-3 font-semibold">{Number(p.quantidade).toLocaleString('pt-BR')}</td>
+                      <td className="px-4 py-3">
+                        {p.liberado_medicao
+                          ? <span className="badge-verde flex items-center gap-1"><DollarSign className="h-3 w-3" />Liberado {p.percentual_medicao}%</span>
+                          : <span className="badge-cinza">Pendente</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 max-w-[160px] truncate">{p.observacoes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+
+        /* ── TAB: NOVO APONTAMENTO ──────────────────────────────── */
+        : (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-lg">
+            <h3 className="font-semibold text-gray-900 mb-4">Novo Apontamento Manual</h3>
+            <form onSubmit={salvarApontamento} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Obra *</label>
+                <select required value={form.obra_id} onChange={async e => {
+                  setForm(f => ({ ...f, obra_id: e.target.value, atividade_id: '' }))
+                  setAtividadesMod([])
+                  if (e.target.value) {
+                    setLoadingAtiv(true)
+                    pcpAtividades.listar({ obra_id: e.target.value }).then(setAtividadesMod).finally(() => setLoadingAtiv(false))
+                  }
+                }} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Selecione...</option>
                   {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
                 </select>
-              </Campo>
-
-              <Campo label="Atividade *">
-                <select
-                  required
-                  value={form.atividade_id}
-                  onChange={e => set('atividade_id', e.target.value)}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Atividade *</label>
+                <select required value={form.atividade_id} onChange={e => setForm(f => ({ ...f, atividade_id: e.target.value }))}
                   disabled={!form.obra_id || loadingAtiv}
-                  className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-400`}
-                >
-                  <option value="">
-                    {loadingAtiv ? 'Carregando...' : !form.obra_id ? 'Selecione uma obra primeiro' : 'Selecione...'}
-                  </option>
-                  {atividadesModal.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50">
+                  <option value="">{loadingAtiv ? 'Carregando...' : !form.obra_id ? 'Selecione uma obra primeiro' : 'Selecione...'}</option>
+                  {atividadesMod.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
                 </select>
-              </Campo>
-
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <Campo label="Data *">
-                  <input type="date" required value={form.data} onChange={e => set('data', e.target.value)} className={inputCls} />
-                </Campo>
-                <Campo label="Tipo *">
-                  <select required value={form.tipo} onChange={e => set('tipo', e.target.value as TipoProducao)} className={inputCls}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+                  <input type="date" required value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+                  <select required value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as TipoProducao }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="producao">Produção</option>
                     <option value="hora">Hora</option>
                     <option value="diaria">Diária</option>
                   </select>
-                </Campo>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade *</label>
+                <input type="number" required min={0.01} step="any" value={form.quantidade || ''}
+                  onChange={e => setForm(f => ({ ...f, quantidade: Number(e.target.value) }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                <textarea rows={2} value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+              <button type="submit" disabled={saving}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Registrar apontamento
+              </button>
+            </form>
+          </div>
+        )
+      )}
+
+      {/* ── Modal de Validação ─────────────────────────────────── */}
+      {validando && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b">
+              <div>
+                <h2 className="font-semibold text-gray-900">Validar conclusão</h2>
+                <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">{validando.nome}</p>
+              </div>
+              <button onClick={() => setValidando(null)} className="text-gray-400 hover:text-gray-700"><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {validando.notas_execucao && (
+                <div className="rounded-lg bg-gray-50 border border-gray-100 px-4 py-3 text-sm text-gray-600 italic">
+                  "{validando.notas_execucao}"
+                </div>
+              )}
+
+              {/* Liberar para medição */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={liberarMed} onChange={e => setLiberarMed(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 accent-blue-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800 flex items-center gap-1.5">
+                      <DollarSign className="h-4 w-4" /> Liberar para medição
+                    </p>
+                    <p className="text-xs text-blue-600">Gera um registro de produção para pagamento</p>
+                  </div>
+                </label>
+                {liberarMed && (
+                  <div>
+                    <label className="block text-xs font-medium text-blue-700 mb-1">% do serviço medido agora</label>
+                    <div className="flex items-center gap-3">
+                      <input type="range" min={1} max={100} value={percentualMed}
+                        onChange={e => setPercentualMed(Number(e.target.value))}
+                        className="flex-1 accent-blue-600" />
+                      <span className="text-sm font-bold text-blue-800 w-10 text-right">{percentualMed}%</span>
+                    </div>
+                    <p className="text-xs text-blue-500 mt-1">
+                      {validando.quantidade_prev
+                        ? `= ${(Number(validando.quantidade_prev) * percentualMed / 100).toLocaleString('pt-BR')} ${validando.unidade ?? ''}`
+                        : ''}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <Campo label="Quantidade *">
-                <input
-                  type="number" required min={0.01} step="any"
-                  value={form.quantidade || ''}
-                  onChange={e => set('quantidade', Number(e.target.value))}
-                  placeholder="0" className={inputCls}
-                />
-              </Campo>
+              {/* Campo de reprovação */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ou reprove indicando o problema:</label>
+                <textarea rows={3} value={obsReprovacao} onChange={e => setObsReprovacao(e.target.value)}
+                  placeholder="Ex.: Argamassa com traço incorreto, refazer o rejunte do trecho A..."
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none" />
+              </div>
 
-              <Campo label="Observações">
-                <textarea
-                  rows={3} value={form.observacoes}
-                  onChange={e => set('observacoes', e.target.value)}
-                  placeholder="Observações sobre o apontamento..."
-                  className={`${inputCls} resize-none`}
-                />
-              </Campo>
-
-              <div className="flex justify-end gap-3 pt-2 border-t">
-                <button type="button" onClick={fecharModal} className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">Cancelar</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2 transition-colors">
-                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Salvar
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => reprovar(validando)} disabled={!obsReprovacao.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-40 transition-colors">
+                  <X className="h-4 w-4" /> Reprovar
+                </button>
+                <button onClick={() => aprovar(validando)}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors">
+                  <CheckCircle2 className="h-4 w-4" /> Aprovar
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
