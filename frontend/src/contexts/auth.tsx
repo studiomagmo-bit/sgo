@@ -16,20 +16,26 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
+// Resolve o caminho correto considerando o basePath do Next.js (/sgo em produção)
+function loginUrl() {
+  if (typeof window === 'undefined') return '/login'
+  // Se o pathname começa com /sgo, o app está em produção com basePath
+  const base = window.location.pathname.startsWith('/sgo') ? '/sgo' : ''
+  return base + '/login/'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<UserWithPerfil | null>(null)
   const [token, setToken]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   async function fetchPerfil(uid: string, accessToken: string): Promise<UserWithPerfil> {
-    // Tenta buscar perfil na tabela usuarios
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', uid)
       .single()
 
-    // Fallback: cria perfil básico se não encontrar
     const userData: UserWithPerfil = (data && data.id) ? data : {
       id: uid,
       nome: 'Usuário',
@@ -39,18 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       construtora_id: undefined,
     }
 
-    // Verifica se é superadmin pela tabela master
-    if (!userData.perfil_sistema || userData.perfil_sistema !== 'superadmin') {
+    // Detecta superadmin via tabela master
+    if (userData.perfil_sistema !== 'superadmin') {
       const { data: masterData } = await supabase
         .from('master')
         .select('id')
         .eq('id', uid)
         .maybeSingle()
-      if (masterData) {
-        userData.perfil_sistema = 'superadmin'
-      } else {
-        userData.perfil_sistema = 'user'
-      }
+      userData.perfil_sistema = masterData ? 'superadmin' : 'user'
     }
 
     setUser(userData)
@@ -68,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchPerfil(session.user.id, session.access_token)
           .finally(() => setLoading(false))
       } else {
-        // Try to restore from localStorage while waiting for session
         try {
           const cached = localStorage.getItem('sgo_user')
           const cachedToken = localStorage.getItem('sgo_token')
@@ -95,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     )
-
     return () => subscription.unsubscribe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,8 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
     if (data.session) {
-      const perfil = await fetchPerfil(data.session.user.id, data.session.access_token)
-      return perfil
+      return await fetchPerfil(data.session.user.id, data.session.access_token)
     }
     return null
   }
@@ -117,7 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('sgo_token')
       localStorage.removeItem('sgo_user')
     } catch {}
-    window.location.href = '/login'
+    // Redireciona para /login respeitando o basePath /sgo em produção
+    window.location.replace(loginUrl())
   }
 
   return (

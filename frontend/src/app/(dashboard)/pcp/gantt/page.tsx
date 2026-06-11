@@ -152,7 +152,7 @@ export default function GanttPage() {
       setAtividades(prev => [...prev, data])
       setShowModal(false)
       setNovaAtividade({ nome: '', estrutura_id: '', empreiteiro_id: '', data_inicio_prev: today(), data_fim_prev: addDays(today(), 7), quantidade_prev: '', unidade: '' })
-    } catch (e: any) { alert(e.message) }
+    } catch (e: any) { console.error(e.message) }
     finally { setSaving(false) }
   }
 
@@ -203,13 +203,18 @@ export default function GanttPage() {
       </div>
 
       {/* Legenda status */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
         {Object.entries(STATUS_COLOR).map(([k, v]) => (
           <div key={k} className="flex items-center gap-1.5">
             <div className={clsx('h-3 w-6 rounded-sm', v.bar)} />
             <span className="text-xs text-gray-500">{STATUS_LABEL[k]}</span>
           </div>
         ))}
+        <div className="flex items-center gap-1.5 ml-2 border-l border-gray-200 pl-3">
+          <div className="h-3 w-6 rounded-sm bg-red-400 ring-2 ring-red-500" />
+          <span className="text-xs text-red-600 font-medium">Atrasada</span>
+        </div>
+        <span className="text-xs text-gray-400">| linha vermelha = hoje</span>
       </div>
 
       {!obraId ? (
@@ -301,7 +306,7 @@ export default function GanttPage() {
                           {bar && (
                             <div
                               style={{ left: bar.left + 2, width: Math.max(bar.width - 4, 4), top: 6, height: 28 }}
-                              className={clsx('absolute rounded-md shadow-sm group cursor-pointer transition-all hover:brightness-90', atrasada ? 'ring-1 ring-red-400' : '', cor.bar)}
+                              className={clsx('absolute rounded-md shadow-sm group cursor-pointer transition-all hover:brightness-90', atrasada ? 'ring-2 ring-red-500 ring-offset-1' : '', atrasada ? 'bg-red-400' : cor.bar)}
                               title={`${a.nome}\n${a.data_inicio_prev} → ${a.data_fim_prev}\n${pct}% concluído`}
                             >
                               {/* Barra de progresso interna */}

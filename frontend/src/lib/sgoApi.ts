@@ -27,8 +27,34 @@ async function getConstrutoraId(): Promise<string | null> {
 // ─── OBRAS ───────────────────────────────────────────────────
 export const obras = {
   listar: async (params?: any) => {
+    // Lê perfil do cache para filtrar obras por vínculo (engenheiro/mestre)
+    let perfil = 'administrador'
+    let uid = ''
+    try {
+      const cached = localStorage.getItem('sgo_user')
+      if (cached) {
+        const u = JSON.parse(cached)
+        perfil = u?.perfil ?? 'administrador'
+        uid    = u?.id ?? ''
+      }
+    } catch {}
+
     let q = supabase.from('obras').select('*').order('nome')
     if (params?.status) q = q.eq('status', params.status)
+
+    // Perfis restritos: só obras vinculadas via usuarios_obra
+    const perfisRestritos = ['engenheiro', 'mestre', 'pcp', 'almoxarife']
+    if (perfisRestritos.includes(perfil) && uid) {
+      const { data: vinculos } = await supabase
+        .from('usuarios_obra')
+        .select('obra_id')
+        .eq('usuario_id', uid)
+        .eq('ativo', true)
+      const obraIds = (vinculos ?? []).map((v: any) => v.obra_id)
+      if (obraIds.length === 0) return []
+      q = q.in('id', obraIds)
+    }
+
     const { data, error } = await q
     if (error) throw error
     return data ?? []
