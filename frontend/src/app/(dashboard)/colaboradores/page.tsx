@@ -5,6 +5,7 @@ import {
   Users, Plus, Pencil, Trash2, Phone, CreditCard,
   HardHat, ChevronDown, ChevronRight, X, Check,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const FUNCOES = ['Pedreiro', 'Servente', 'Carpinteiro', 'Eletricista', 'Encanador',
   'Pintor', 'Armador', 'Operador de Máquina', 'Mestre de Obras', 'Encarregado', 'Outro']
@@ -91,7 +92,7 @@ export default function ColaboradoresPage() {
       setModal(false)
       await carregar()
     } catch (e: any) {
-      alert('Erro: ' + e.message)
+      toast.error('Erro: ' + e.message)
     } finally {
       setSalvando(false)
     }
@@ -104,7 +105,7 @@ export default function ColaboradoresPage() {
       await colaboradoresApi.excluir(id)
       await carregar()
     } catch (e: any) {
-      alert('Erro: ' + e.message)
+      toast.error('Erro: ' + e.message)
     } finally {
       setExcluindo(null)
     }

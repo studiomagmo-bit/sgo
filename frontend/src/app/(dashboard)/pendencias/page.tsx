@@ -176,10 +176,11 @@ export default function PendenciasPage() {
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-gray-900">{p.descricao}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{(p as any).atividades?.nome ?? '—'}</p>
                     <span className={s.cls}>{s.label}</span>
                   </div>
                   <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                    {p.prazo && <span>Prazo: {new Date(p.prazo).toLocaleDateString('pt-BR')}</span>}
+                    {p.prazo && <span>Prazo: {new Date(p.prazo + 'T12:00:00').toLocaleDateString('pt-BR')}</span>}
                     <span>Criada em: {new Date(p.criado_em).toLocaleDateString('pt-BR')}</span>
                     {p.inspecao_id && <span className="badge-azul">Vinculada à inspeção</span>}
                   </div>

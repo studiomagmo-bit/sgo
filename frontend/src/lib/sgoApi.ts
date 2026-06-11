@@ -247,7 +247,7 @@ export const efetivos = {
 // ─── PRODUÇÕES ────────────────────────────────────────────────
 export const producoes = {
   listar: async (params?: any) => {
-    let q = supabase.from('producoes').select('*, atividades(nome), obras(nome)').order('data', { ascending: false })
+    let q = supabase.from('producoes').select('*, atividades(nome), obras(nome), empreiteiros(razao_social)').order('data', { ascending: false })
     if (params?.obra_id)     q = q.eq('obra_id', params.obra_id)
     if (params?.atividade_id) q = q.eq('atividade_id', params.atividade_id)
     const { data, error } = await q

@@ -167,15 +167,15 @@ export default function MedicoesPage() {
       {obraId && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="kpi-card">
-            <p className="text-sm text-muted-foreground">Total de Medições</p>
+            <p className="text-sm text-gray-500">Total de Medições</p>
             <p className="text-2xl font-bold mt-1">{medicoes.length}</p>
           </div>
           <div className="kpi-card">
-            <p className="text-sm text-muted-foreground">Total Bruto</p>
+            <p className="text-sm text-gray-500">Total Bruto</p>
             <p className="text-2xl font-bold mt-1">{fmt(totalBruto)}</p>
           </div>
           <div className="kpi-card">
-            <p className="text-sm text-muted-foreground">Total Líquido</p>
+            <p className="text-sm text-gray-500">Total Líquido</p>
             <p className="text-2xl font-bold mt-1 text-green-600">{fmt(totalLiq)}</p>
           </div>
         </div>
@@ -213,9 +213,9 @@ export default function MedicoesPage() {
                 return (
                   <tr key={m.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium">#{m.numero}</td>
-                    <td className="px-4 py-3 text-gray-600">{m.empreiteiro_id}</td>
+                    <td className="px-4 py-3 text-gray-600">{(m as any).empreiteiros?.razao_social ?? m.empreiteiro_id}</td>
                     <td className="px-4 py-3 text-gray-500">
-                      {new Date(m.periodo_inicio).toLocaleDateString('pt-BR')} — {new Date(m.periodo_fim).toLocaleDateString('pt-BR')}
+                      {new Date(m.periodo_inicio + 'T12:00:00').toLocaleDateString('pt-BR')} — {new Date(m.periodo_fim + 'T12:00:00').toLocaleDateString('pt-BR')}
                     </td>
                     <td className="px-4 py-3">{fmt(Number(m.valor_bruto))}</td>
                     <td className="px-4 py-3 text-red-600">{fmt(Number(m.valor_desconto))}</td>

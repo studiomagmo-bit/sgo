@@ -248,7 +248,7 @@ export interface Pendencia {
 
 export interface ContratoItem {
   id: UUID
-  contrato_id: UUID
+  contrato_id?: UUID
   servico_id?: UUID
   descricao: string
   unidade: string
@@ -290,7 +290,7 @@ export interface Medicao {
   id: UUID
   construtora_id: UUID
   obra_id: UUID
-  contrato_id: UUID
+  contrato_id?: UUID
   empreiteiro_id: UUID
   numero: number
   periodo_inicio: string

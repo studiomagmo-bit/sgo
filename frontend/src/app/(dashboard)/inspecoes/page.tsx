@@ -1,33 +1,30 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { inspecoes as inspecoesApi, obras as obrasApi, atividades as pcpAtividades } from '@/lib/sgoApi'
-import type { Inspecao, Obra, Atividade } from '@/types'
+import type { Obra, Atividade } from '@/types'
 import { Plus, Loader2, CheckCircle, Clock, XCircle, AlertCircle, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; cls: string; icon: any }> = {
-  aguardando:             { label: 'Aguardando',          cls: 'badge-amarelo', icon: Clock       },
-  aprovada:               { label: 'Aprovada',            cls: 'badge-verde',   icon: CheckCircle },
-  aprovada_com_ressalvas: { label: 'Com Ressalvas',       cls: 'badge-azul',    icon: AlertCircle },
-  reprovada:              { label: 'Reprovada',           cls: 'badge-vermelho',icon: XCircle     },
+  aguardando:             { label: 'Aguardando',    cls: 'badge-amarelo', icon: Clock       },
+  aprovada:               { label: 'Aprovada',      cls: 'badge-verde',   icon: CheckCircle },
+  aprovada_com_ressalvas: { label: 'Com Ressalvas', cls: 'badge-azul',    icon: AlertCircle },
+  reprovada:              { label: 'Reprovada',     cls: 'badge-vermelho',icon: XCircle     },
 }
 
 const hoje = new Date().toISOString().slice(0, 10)
 
 export default function InspecoesPage() {
-  // ── listagem ─────────────────────────────────────────────────
   const [obras, setObras]           = useState<Obra[]>([])
   const [obraId, setObraId]         = useState('')
-  const [inspecoes, setInspecoes]   = useState<Inspecao[]>([])
+  const [inspecoes, setInspecoes]   = useState<any[]>([])
   const [loading, setLoading]       = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('')
 
-  // ── modal ────────────────────────────────────────────────────
-  const [showModal, setShowModal]         = useState(false)
-  const [saving, setSaving]               = useState(false)
-  const [modalObrasLista, setModalObrasLista] = useState<Obra[]>([])
+  const [showModal, setShowModal]     = useState(false)
+  const [saving, setSaving]           = useState(false)
   const [atividadesLista, setAtividadesLista] = useState<Atividade[]>([])
-  const [loadingAtiv, setLoadingAtiv]     = useState(false)
+  const [loadingAtiv, setLoadingAtiv] = useState(false)
 
   const [form, setForm] = useState({
     obra_id:          '',
@@ -37,7 +34,6 @@ export default function InspecoesPage() {
     libera_medicao:   false,
   })
 
-  // ── efeitos de listagem ──────────────────────────────────────
   useEffect(() => { obrasApi.listar().then(setObras) }, [])
 
   useEffect(() => {
@@ -47,15 +43,19 @@ export default function InspecoesPage() {
       .then(setInspecoes).finally(() => setLoading(false))
   }, [obraId, filtroStatus])
 
-  // ── abrir modal ──────────────────────────────────────────────
   function abrirModal() {
-    setForm({ obra_id: '', atividade_id: '', data_solicitacao: hoje, observacoes: '', libera_medicao: false })
+    setForm({ obra_id: obraId || '', atividade_id: '', data_solicitacao: hoje, observacoes: '', libera_medicao: false })
     setAtividadesLista([])
-    setModalObrasLista(obras)
+    // Se já há obra selecionada, carrega atividades automaticamente
+    if (obraId) {
+      setLoadingAtiv(true)
+      pcpAtividades.listar({ obra_id: obraId })
+        .then(d => setAtividadesLista(d as Atividade[]))
+        .finally(() => setLoadingAtiv(false))
+    }
     setShowModal(true)
   }
 
-  // ── quando obra muda no modal ────────────────────────────────
   async function handleObraChange(id: string) {
     setForm(f => ({ ...f, obra_id: id, atividade_id: '' }))
     if (!id) { setAtividadesLista([]); return }
@@ -68,7 +68,6 @@ export default function InspecoesPage() {
     }
   }
 
-  // ── submit ───────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.obra_id || !form.atividade_id) {
@@ -87,7 +86,6 @@ export default function InspecoesPage() {
       })
       toast.success('Inspeção criada com sucesso!')
       setShowModal(false)
-      // recarrega se a obra do modal for a mesma do filtro
       if (form.obra_id === obraId || !obraId) {
         setObraId(form.obra_id)
         setLoading(true)
@@ -101,24 +99,29 @@ export default function InspecoesPage() {
     }
   }
 
-  // ── render ───────────────────────────────────────────────────
+  // Atualizar status de inspeção inline
+  async function atualizarStatus(id: string, novoStatus: string) {
+    try {
+      await inspecoesApi.atualizar(id, { status: novoStatus })
+      setInspecoes(prev => prev.map(i => i.id === id ? { ...i, status: novoStatus } : i))
+      toast.success('Status atualizado')
+    } catch {
+      toast.error('Erro ao atualizar status')
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inspeções</h1>
           <p className="text-sm text-gray-500 mt-1">Controle de qualidade e aprovações</p>
         </div>
-        <button
-          onClick={abrirModal}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-        >
+        <button onClick={abrirModal} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
           <Plus className="h-4 w-4" /> Nova Inspeção
         </button>
       </div>
 
-      {/* filtros */}
       <div className="flex gap-3 flex-wrap">
         <select value={obraId} onChange={e => setObraId(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
@@ -132,7 +135,6 @@ export default function InspecoesPage() {
         </select>
       </div>
 
-      {/* KPIs rápidos */}
       {obraId && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(statusConfig).map(([k, v]) => {
@@ -140,7 +142,7 @@ export default function InspecoesPage() {
             const Icon = v.icon
             return (
               <button key={k} onClick={() => setFiltroStatus(filtroStatus === k ? '' : k)}
-                className={`rounded-xl p-4 border-2 text-left transition-all ${filtroStatus === k ? 'border-blue-500 shadow-md' : 'border-transparent bg-white shadow-sm hover:shadow-md'}`}>
+                className={`rounded-xl p-4 border-2 text-left transition-all ${filtroStatus === k ? 'border-blue-500 shadow-md bg-blue-50' : 'border-transparent bg-white shadow-sm hover:shadow-md'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <Icon className="h-4 w-4 text-gray-500" />
                   <p className="text-xs text-gray-500">{v.label}</p>
@@ -152,7 +154,6 @@ export default function InspecoesPage() {
         </div>
       )}
 
-      {/* Tabela */}
       {!obraId ? (
         <div className="rounded-xl border bg-white p-12 text-center text-gray-400">
           <CheckCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -165,27 +166,43 @@ export default function InspecoesPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-xs text-gray-500 uppercase tracking-wider">
               <tr>
-                {['Atividade','Inspetor','Data Solicitação','Data Inspeção','Status','Libera Medição'].map(h => (
+                {['Atividade','Data Solicitação','Status','Libera Medição','Ação'].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {inspecoes.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">Nenhuma inspeção encontrada</td></tr>
+                <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">Nenhuma inspeção encontrada</td></tr>
               ) : inspecoes.map(i => {
                 const s = statusConfig[i.status] || { label: i.status, cls: 'badge-cinza', icon: Clock }
+                // Usa join quando disponível, fallback para UUID curto
+                const nomeAtividade = i.atividades?.nome ?? i.atividade_id?.substring(0, 8) + '…'
                 return (
                   <tr key={i.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{i.atividade_id}</td>
-                    <td className="px-4 py-3 text-gray-500">{i.inspetor_id || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{new Date(i.data_solicitacao).toLocaleDateString('pt-BR')}</td>
-                    <td className="px-4 py-3 text-gray-500">{i.data_inspecao ? new Date(i.data_inspecao).toLocaleDateString('pt-BR') : '—'}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{nomeAtividade}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {i.data_solicitacao ? new Date(i.data_solicitacao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}
+                    </td>
                     <td className="px-4 py-3"><span className={s.cls}>{s.label}</span></td>
                     <td className="px-4 py-3">
                       <span className={i.libera_medicao ? 'badge-verde' : 'badge-cinza'}>
                         {i.libera_medicao ? 'Sim' : 'Não'}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {i.status === 'aguardando' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => atualizarStatus(i.id, 'aprovada')}
+                            className="rounded px-2 py-1 text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
+                          >Aprovar</button>
+                          <button
+                            onClick={() => atualizarStatus(i.id, 'reprovada')}
+                            className="rounded px-2 py-1 text-xs bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+                          >Reprovar</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )
@@ -195,21 +212,15 @@ export default function InspecoesPage() {
         </div>
       )}
 
-      {/* ── Modal Nova Inspeção ─────────────────────────────────── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            {/* header */}
             <div className="flex items-center justify-between p-5 border-b">
               <h2 className="text-lg font-semibold">Nova Inspeção</h2>
-              <button onClick={() => setShowModal(false)} aria-label="Fechar">
-                <X className="h-5 w-5" />
-              </button>
+              <button onClick={() => setShowModal(false)} aria-label="Fechar"><X className="h-5 w-5 text-gray-500" /></button>
             </div>
 
-            {/* form */}
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* Obra */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Obra <span className="text-red-500">*</span></label>
                 <select
@@ -219,11 +230,10 @@ export default function InspecoesPage() {
                   className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecione uma obra...</option>
-                  {modalObrasLista.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+                  {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
                 </select>
               </div>
 
-              {/* Atividade */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Atividade <span className="text-red-500">*</span></label>
                 <select
@@ -240,58 +250,29 @@ export default function InspecoesPage() {
                 </select>
               </div>
 
-              {/* Data Solicitação */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Data de Solicitação <span className="text-red-500">*</span></label>
-                <input
-                  type="date"
-                  value={form.data_solicitacao}
-                  onChange={e => setForm(f => ({ ...f, data_solicitacao: e.target.value }))}
-                  required
-                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <input type="date" value={form.data_solicitacao} onChange={e => setForm(f => ({ ...f, data_solicitacao: e.target.value }))} required
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
 
-              {/* Observações */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                <textarea
-                  value={form.observacoes}
-                  onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
-                  rows={3}
-                  placeholder="Observações opcionais..."
-                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
+                <textarea value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
+                  rows={3} placeholder="Observações opcionais..."
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
               </div>
 
-              {/* Libera Medição */}
               <div className="flex items-center gap-3">
-                <input
-                  id="libera_medicao"
-                  type="checkbox"
-                  checked={form.libera_medicao}
+                <input id="libera_medicao" type="checkbox" checked={form.libera_medicao}
                   onChange={e => setForm(f => ({ ...f, libera_medicao: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="libera_medicao" className="text-sm font-medium text-gray-700">
-                  Libera Medição
-                </label>
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <label htmlFor="libera_medicao" className="text-sm font-medium text-gray-700">Libera Medição</label>
               </div>
 
-              {/* ações */}
               <div className="flex justify-end gap-3 pt-2 border-t">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2"
-                >
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Cancelar</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />} Salvar
                 </button>
               </div>

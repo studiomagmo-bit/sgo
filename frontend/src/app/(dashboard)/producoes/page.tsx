@@ -5,14 +5,12 @@ import {
   obras     as obrasApi,
   atividades as pcpAtividades,
 } from '@/lib/sgoApi'
-import type { Producao, Obra, Atividade, TipoProducao } from '@/types'
+import type { Obra, Atividade, TipoProducao } from '@/types'
 import { Plus, Loader2, ClipboardList, X } from 'lucide-react'
 import { toast } from 'sonner'
 
-// ─── Helpers ─────────────────────────────────────────────────
 const hoje = () => new Date().toISOString().split('T')[0]
 
-// ─── Tipos do formulário ─────────────────────────────────────
 interface ProducaoForm {
   obra_id:      string
   atividade_id: string
@@ -31,7 +29,6 @@ const FORM_INICIAL: ProducaoForm = {
   observacoes:  '',
 }
 
-// ─── Componente de campo label + input ───────────────────────
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
@@ -44,22 +41,25 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 const inputCls =
   'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 
-// ─── Página principal ────────────────────────────────────────
+const TIPO_LABEL: Record<string, string> = {
+  producao: 'Produção',
+  hora:     'Hora',
+  diaria:   'Diária',
+}
+
 export default function ProducoesPage() {
   const [obras, setObras]         = useState<Obra[]>([])
   const [obraId, setObraId]       = useState('')
-  const [producoes, setProducoes] = useState<Producao[]>([])
+  // Tipagem ampliada para incluir campos do join
+  const [producoes, setProducoes] = useState<any[]>([])
   const [loading, setLoading]     = useState(false)
 
-  // ── Modal ──
   const [showModal, setShowModal]     = useState(false)
   const [form, setForm]               = useState<ProducaoForm>(FORM_INICIAL)
   const [saving, setSaving]           = useState(false)
-  const [modalObras, setModalObras]   = useState<Obra[]>([])
   const [atividadesModal, setAtividadesModal] = useState<Atividade[]>([])
   const [loadingAtiv, setLoadingAtiv] = useState(false)
 
-  // ── Carga inicial ──
   useEffect(() => { obrasApi.listar().then(setObras) }, [])
 
   const carregarProducoes = () => {
@@ -70,13 +70,9 @@ export default function ProducoesPage() {
 
   useEffect(() => { carregarProducoes() }, [obraId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── KPIs ──
-  const totalProd = producoes.reduce((s, p) => s + Number(p.quantidade), 0)
+  const totalProd = producoes.reduce((s: number, p: any) => s + Number(p.quantidade), 0)
 
-  // ── Handlers do modal ──
   const abrirModal = () => {
-    // Pré-popula obras no modal (re-usa o estado já carregado)
-    setModalObras(obras)
     setForm({ ...FORM_INICIAL, obra_id: obraId, data: hoje() })
     setAtividadesModal([])
     setShowModal(true)
@@ -91,7 +87,6 @@ export default function ProducoesPage() {
   const set = (field: keyof ProducaoForm, value: string | number) =>
     setForm(prev => ({ ...prev, [field]: value }))
 
-  // Quando obra muda no modal, recarrega atividades e limpa seleção
   const handleObraModal = async (obraIdSelecionada: string) => {
     set('obra_id', obraIdSelecionada)
     set('atividade_id', '')
@@ -126,7 +121,6 @@ export default function ProducoesPage() {
       })
       toast.success('Produção registrada com sucesso!')
       fecharModal()
-      // Se a obra do modal coincidir com o filtro ativo, recarrega a lista
       if (form.obra_id === obraId) carregarProducoes()
     } catch (err: any) {
       toast.error(err?.message ?? 'Erro ao registrar produção')
@@ -135,10 +129,8 @@ export default function ProducoesPage() {
     }
   }
 
-  // ────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Produções</h1>
@@ -152,7 +144,6 @@ export default function ProducoesPage() {
         </button>
       </div>
 
-      {/* Filtro de obra */}
       <select
         value={obraId}
         onChange={e => setObraId(e.target.value)}
@@ -162,27 +153,19 @@ export default function ProducoesPage() {
         {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
       </select>
 
-      {/* KPIs */}
       {obraId && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="kpi-card">
-            <p className="text-sm text-muted-foreground">Lançamentos</p>
+            <p className="text-sm text-gray-500">Lançamentos</p>
             <p className="text-2xl font-bold mt-1">{producoes.length}</p>
           </div>
           <div className="kpi-card">
-            <p className="text-sm text-muted-foreground">Total Produzido</p>
+            <p className="text-sm text-gray-500">Total Produzido</p>
             <p className="text-2xl font-bold mt-1">{totalProd.toLocaleString('pt-BR')}</p>
-          </div>
-          <div className="kpi-card">
-            <p className="text-sm text-muted-foreground">Com Rateio</p>
-            <p className="text-2xl font-bold mt-1">
-              {producoes.filter(p => p.individual && p.individual.length > 0).length}
-            </p>
           </div>
         </div>
       )}
 
-      {/* Tabela */}
       {!obraId ? (
         <div className="rounded-xl border bg-white p-12 text-center text-gray-400">
           <ClipboardList className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -197,7 +180,7 @@ export default function ProducoesPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-xs text-gray-500 uppercase tracking-wider">
               <tr>
-                {['Data','Atividade','Empreiteiro','Tipo','Quantidade','Rateio','Observação'].map(h => (
+                {['Data','Atividade','Tipo','Quantidade','Observação'].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
@@ -205,29 +188,25 @@ export default function ProducoesPage() {
             <tbody className="divide-y divide-gray-100">
               {producoes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-gray-400">
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                     Nenhuma produção encontrada
                   </td>
                 </tr>
-              ) : producoes.map(p => (
+              ) : producoes.map((p: any) => (
                 <tr key={p.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">{new Date(p.data).toLocaleDateString('pt-BR')}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {p.atividade_id.substring(0, 8)}…
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {new Date(p.data + 'T12:00:00').toLocaleDateString('pt-BR')}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {p.empreiteiro_id?.substring(0, 8) ?? '—'}
+                  {/* Usa o join (atividades.nome) quando disponível */}
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {p.atividades?.nome ?? p.atividade_id?.substring(0, 8) + '…'}
                   </td>
                   <td className="px-4 py-3 capitalize">
-                    <span className="badge-azul">{p.tipo}</span>
+                    <span className="badge-azul">{TIPO_LABEL[p.tipo] ?? p.tipo}</span>
                   </td>
                   <td className="px-4 py-3 font-semibold">
-                    {Number(p.quantidade).toLocaleString('pt-BR')} {p.unidade}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.individual && p.individual.length > 0
-                      ? <span className="badge-verde">{p.individual.length} colab.</span>
-                      : <span className="badge-cinza">—</span>}
+                    {Number(p.quantidade).toLocaleString('pt-BR')}
+                    {p.unidade ? ` ${p.unidade}` : ''}
                   </td>
                   <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">
                     {p.observacoes || '—'}
@@ -239,25 +218,17 @@ export default function ProducoesPage() {
         </div>
       )}
 
-      {/* ── Modal Nova Produção ─────────────────────────────────── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            {/* Header do modal */}
             <div className="flex items-center justify-between p-5 border-b">
               <h2 className="text-lg font-semibold text-gray-900">Nova Produção</h2>
-              <button
-                onClick={fecharModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="Fechar modal"
-              >
+              <button onClick={fecharModal} className="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Fechar modal">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Formulário */}
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* Obra */}
               <Campo label="Obra *">
                 <select
                   required
@@ -266,13 +237,10 @@ export default function ProducoesPage() {
                   className={inputCls}
                 >
                   <option value="">Selecione...</option>
-                  {modalObras.map(o => (
-                    <option key={o.id} value={o.id}>{o.nome}</option>
-                  ))}
+                  {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
                 </select>
               </Campo>
 
-              {/* Atividade (filtrada por obra) */}
               <Campo label="Atividade *">
                 <select
                   required
@@ -282,37 +250,18 @@ export default function ProducoesPage() {
                   className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-400`}
                 >
                   <option value="">
-                    {loadingAtiv
-                      ? 'Carregando...'
-                      : !form.obra_id
-                      ? 'Selecione uma obra primeiro'
-                      : 'Selecione...'}
+                    {loadingAtiv ? 'Carregando...' : !form.obra_id ? 'Selecione uma obra primeiro' : 'Selecione...'}
                   </option>
-                  {atividadesModal.map(a => (
-                    <option key={a.id} value={a.id}>{a.nome}</option>
-                  ))}
+                  {atividadesModal.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
                 </select>
               </Campo>
 
-              {/* Data + Tipo lado a lado */}
               <div className="grid grid-cols-2 gap-3">
                 <Campo label="Data *">
-                  <input
-                    type="date"
-                    required
-                    value={form.data}
-                    onChange={e => set('data', e.target.value)}
-                    className={inputCls}
-                  />
+                  <input type="date" required value={form.data} onChange={e => set('data', e.target.value)} className={inputCls} />
                 </Campo>
-
                 <Campo label="Tipo *">
-                  <select
-                    required
-                    value={form.tipo}
-                    onChange={e => set('tipo', e.target.value as TipoProducao)}
-                    className={inputCls}
-                  >
+                  <select required value={form.tipo} onChange={e => set('tipo', e.target.value as TipoProducao)} className={inputCls}>
                     <option value="producao">Produção</option>
                     <option value="hora">Hora</option>
                     <option value="diaria">Diária</option>
@@ -320,45 +269,27 @@ export default function ProducoesPage() {
                 </Campo>
               </div>
 
-              {/* Quantidade */}
               <Campo label="Quantidade *">
                 <input
-                  type="number"
-                  required
-                  min={0.01}
-                  step="any"
+                  type="number" required min={0.01} step="any"
                   value={form.quantidade || ''}
                   onChange={e => set('quantidade', Number(e.target.value))}
-                  placeholder="0"
-                  className={inputCls}
+                  placeholder="0" className={inputCls}
                 />
               </Campo>
 
-              {/* Observações */}
               <Campo label="Observações">
                 <textarea
-                  rows={3}
-                  value={form.observacoes}
+                  rows={3} value={form.observacoes}
                   onChange={e => set('observacoes', e.target.value)}
                   placeholder="Observações sobre o apontamento..."
                   className={`${inputCls} resize-none`}
                 />
               </Campo>
 
-              {/* Rodapé com ações */}
               <div className="flex justify-end gap-3 pt-2 border-t">
-                <button
-                  type="button"
-                  onClick={fecharModal}
-                  className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2 transition-colors"
-                >
+                <button type="button" onClick={fecharModal} className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">Cancelar</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2 transition-colors">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   Salvar
                 </button>

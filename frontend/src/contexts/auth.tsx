@@ -22,17 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   async function fetchPerfil(uid: string, accessToken: string): Promise<UserWithPerfil> {
+    // Tenta buscar perfil na tabela usuarios
     const { data, error } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', uid)
       .single()
 
-    if (error) {
-      console.warn('[SGO] fetchPerfil erro:', error.message)
-    }
-
-    // Se encontrou perfil, usa ele; caso contrário cria perfil básico
+    // Fallback: cria perfil básico se não encontrar
     const userData: UserWithPerfil = (data && data.id) ? data : {
       id: uid,
       nome: 'Usuário',
@@ -42,25 +39,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       construtora_id: undefined,
     }
 
+    // Verifica se é superadmin pela tabela master
+    if (!userData.perfil_sistema || userData.perfil_sistema !== 'superadmin') {
+      const { data: masterData } = await supabase
+        .from('master')
+        .select('id')
+        .eq('id', uid)
+        .maybeSingle()
+      if (masterData) {
+        userData.perfil_sistema = 'superadmin'
+      } else {
+        userData.perfil_sistema = 'user'
+      }
+    }
+
     setUser(userData)
     setToken(accessToken)
-    localStorage.setItem('sgo_token', accessToken)
-    localStorage.setItem('sgo_user', JSON.stringify(userData))
+    try {
+      localStorage.setItem('sgo_token', accessToken)
+      localStorage.setItem('sgo_user', JSON.stringify(userData))
+    } catch {}
     return userData
   }
 
   useEffect(() => {
-    // Verifica sessão existente ao carregar a página
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         fetchPerfil(session.user.id, session.access_token)
           .finally(() => setLoading(false))
       } else {
+        // Try to restore from localStorage while waiting for session
+        try {
+          const cached = localStorage.getItem('sgo_user')
+          const cachedToken = localStorage.getItem('sgo_token')
+          if (cached && cachedToken) {
+            setUser(JSON.parse(cached))
+            setToken(cachedToken)
+          }
+        } catch {}
         setLoading(false)
       }
     })
 
-    // Escuta mudanças de sessão
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session) {
@@ -68,14 +88,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null)
           setToken(null)
-          localStorage.removeItem('sgo_token')
-          localStorage.removeItem('sgo_user')
+          try {
+            localStorage.removeItem('sgo_token')
+            localStorage.removeItem('sgo_user')
+          } catch {}
         }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email: string, password: string): Promise<UserWithPerfil | null> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -91,8 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setToken(null)
-    localStorage.removeItem('sgo_token')
-    localStorage.removeItem('sgo_user')
+    try {
+      localStorage.removeItem('sgo_token')
+      localStorage.removeItem('sgo_user')
+    } catch {}
     window.location.href = '/login'
   }
 
