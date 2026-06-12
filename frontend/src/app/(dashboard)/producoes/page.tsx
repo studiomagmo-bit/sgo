@@ -32,6 +32,7 @@ type Tab = 'validacao' | 'apontamentos' | 'novo'
 
 export default function ProducoesPage() {
   const { user } = useAuth()
+  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
   const [tab, setTab]             = useState<Tab>('validacao')
   const [obras, setObras]         = useState<Obra[]>([])
   const [obraId, setObraId]       = useState('')
@@ -181,11 +182,16 @@ export default function ProducoesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Produções</h1>
           <p className="text-sm text-gray-500 mt-1">Validações pendentes + apontamentos de produção</p>
         </div>
-        <select value={obraId} onChange={e => setObraId(e.target.value)}
-          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+        {!isRestrito && (
+        <select
+          value={obraId}
+          onChange={e => setObraId(e.target.value)}
+          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
+        >
           <option value="">Selecione uma obra...</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
+      )}
       </div>
 
       {/* Tabs */}

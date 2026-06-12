@@ -380,17 +380,27 @@ export default function PcpDashboardPage() {
 
       {/* Filtro obra + toggle view */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Building2 className="h-4 w-4" /> Obra:
-        </div>
-        <select
-          value={obraFiltro}
-          onChange={e => trocarObra(e.target.value)}
-          className="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
-        >
-          {isGestor && <option value="todas">Todas as obras</option>}
-          {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-        </select>
+        {isGestor && (
+          <>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Building2 className="h-4 w-4" /> Obra:
+            </div>
+            <select
+              value={obraFiltro}
+              onChange={e => trocarObra(e.target.value)}
+              className="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+            >
+              <option value="todas">Todas as obras</option>
+              {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+            </select>
+          </>
+        )}
+        {!isGestor && obras[0] && (
+          <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-1.5">
+            <Building2 className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium text-blue-800">{obras[0].nome}</span>
+          </div>
+        )}
         <span className="text-xs text-gray-400">{atividadesComDesvio.length} atividades</span>
 
         {/* Toggle árvore / tabela */}

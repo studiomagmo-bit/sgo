@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { medicoes as medicoesApi, obras as obrasApi, empreiteiros as empreiteirosApi } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import type { Medicao, Obra, Empreiteiro, StatusMedicao } from '@/types'
 import { Plus, Loader2, DollarSign, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -151,6 +152,7 @@ export default function MedicoesPage() {
 
       {/* Filtros */}
       <div className="flex gap-3 flex-wrap">
+        {!isRestrito && (
         <select
           value={obraId}
           onChange={e => setObraId(e.target.value)}
@@ -159,6 +161,7 @@ export default function MedicoesPage() {
           <option value="">Selecione uma obra...</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
+      )}
         <select
           value={filtroStatus}
           onChange={e => setFiltroStatus(e.target.value)}

@@ -6,6 +6,7 @@ import {
   estruturaObra,
   empreiteiros as empreiteirosApi,
 } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import type { Atividade, Obra, StatusAtividade, PrioridadeAtividade } from '@/types'
 import { supabase } from '@/lib/supabase'
 import { Plus, Loader2, GitBranch, AlertTriangle, X, ChevronDown } from 'lucide-react'
@@ -270,6 +271,7 @@ export default function PCPPage() {
 
       {/* Filtros */}
       <div className="flex gap-3 flex-wrap">
+        {!isRestrito && (
         <select
           value={obraId}
           onChange={e => setObraId(e.target.value)}
@@ -278,6 +280,7 @@ export default function PCPPage() {
           <option value="">Selecione uma obra...</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
+      )}
 
         <select
           value={filtroStatus}

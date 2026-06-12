@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { inspecoes as inspecoesApi, obras as obrasApi, atividades as pcpAtividades } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import type { Obra, Atividade } from '@/types'
 import { Plus, Loader2, CheckCircle, Clock, XCircle, AlertCircle, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -135,11 +136,16 @@ export default function InspecoesPage() {
       </div>
 
       <div className="flex gap-3 flex-wrap">
-        <select value={obraId} onChange={e => setObraId(e.target.value)}
-          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+        {!isRestrito && (
+        <select
+          value={obraId}
+          onChange={e => setObraId(e.target.value)}
+          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
+        >
           <option value="">Selecione uma obra...</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
+      )}
         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">Todos os status</option>

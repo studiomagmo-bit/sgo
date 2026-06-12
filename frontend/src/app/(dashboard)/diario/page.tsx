@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { diario as diarioApi, obras as obrasApi } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import type { DiarioObra, Obra } from '@/types'
 import { BookOpen, Loader2, Plus, Users, Camera, AlertTriangle, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -81,14 +82,16 @@ export default function DiarioPage() {
 
       {/* Seletor de obra */}
       <div className="flex items-center gap-3">
+        {!isRestrito && (
         <select
           value={obraId}
           onChange={e => setObraId(e.target.value)}
-          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[260px]"
+          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
         >
           <option value="">Selecione uma obra...</option>
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
+      )}
         {obraSelecionadaNome && (
           <span className="text-sm text-gray-500">
             Exibindo registros de <span className="font-medium text-gray-700">{obraSelecionadaNome}</span>

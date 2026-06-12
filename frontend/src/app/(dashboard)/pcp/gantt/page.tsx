@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { obras as obrasApi } from '@/lib/sgoApi'
-import { Plus, Loader2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Calendar, AlertTriangle, Check } from 'lucide-react'
+import { useAuth } from '@/contexts/auth'
+import { Plus, Loader2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Calendar, AlertTriangle, Check, Building2 } from 'lucide-react'
 import { clsx } from 'clsx'
 
 // ── Cores por status ──────────────────────────────────────────
@@ -179,12 +180,19 @@ export default function GanttPage() {
           <p className="text-sm text-gray-500 mt-0.5">{atividades.length} atividades planejadas</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Obra selector */}
-          <select value={obraId} onChange={e => setObraId(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Selecionar obra...</option>
-            {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-          </select>
+          {/* Obra selector — apenas para gestor */}
+          {!isRestrito ? (
+            <select value={obraId} onChange={e => setObraId(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Selecionar obra...</option>
+              {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+            </select>
+          ) : obras[0] && (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+              <Building2 className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-medium text-blue-800">{obras[0].nome}</span>
+            </div>
+          )}
           {/* Zoom */}
           <button onClick={() => setZoom(z => Math.max(0.4, z - 0.2))} className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ZoomOut className="h-4 w-4" /></button>
           <span className="text-xs text-gray-500 font-mono w-12 text-center">{Math.round(zoom * 100)}%</span>
