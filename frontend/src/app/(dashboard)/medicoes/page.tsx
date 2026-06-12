@@ -51,7 +51,15 @@ export default function MedicoesPage() {
 
   // Carregar obras e empreiteiros ao montar
   useEffect(() => {
-    obrasApi.listar().then(setObras)
+    obrasApi.listar().then(obs => {
+      setObras(obs)
+      try {
+        const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
+        if (['engenheiro','mestre','pcp','almoxarife'].includes(u?.perfil) && obs.length === 1) {
+          setObraId(obs[0].id)
+        }
+      } catch {}
+    })
     empreiteirosApi.listar().then(setEmpreiteiros)
   }, [])
 

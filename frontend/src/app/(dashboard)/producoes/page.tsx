@@ -54,7 +54,19 @@ export default function ProducoesPage() {
   const [loadingAtiv, setLoadingAtiv] = useState(false)
   const [saving, setSaving]       = useState(false)
 
-  useEffect(() => { obrasApi.listar().then(setObras) }, [])
+  useEffect(() => {
+    obrasApi.listar().then(obs => {
+      setObras(obs)
+      // Engenheiro: auto-seleciona sua obra única
+      try {
+        const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
+        const perfisRestritos = ['engenheiro','mestre','pcp','almoxarife']
+        if (perfisRestritos.includes(u?.perfil) && obs.length === 1) {
+          setObraId(obs[0].id)
+        }
+      } catch {}
+    })
+  }, [])
 
   const carregarPendentes = useCallback(() => {
     if (!obraId) return

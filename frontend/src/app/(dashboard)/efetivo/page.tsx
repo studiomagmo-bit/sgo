@@ -56,6 +56,13 @@ export default function EfetivoPage() {
       try {
         const [obs, emps] = await Promise.all([obrasApi.listar(), empreiteirosApi.listar()])
         setObras(obs)
+        // Engenheiro: auto-seleciona obra única
+        try {
+          const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
+          if (['engenheiro','mestre','pcp','almoxarife'].includes(u?.perfil) && obs.length === 1) {
+            setObraId(obs[0].id)
+          }
+        } catch {}
         setEmpreiteiros(emps)
       } catch {}
     }

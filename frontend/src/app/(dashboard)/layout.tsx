@@ -10,7 +10,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login')
+    if (loading) return
+    if (!user) { router.push('/login'); return }
+
+    // Engenheiro/mestre: na primeira visita ao /dashboard,
+    // redireciona para /pcp-dashboard (a tela principal deles)
+    // O próprio dashboard/page.tsx mostra o DashEngenheiro correto
+    // então só precisamos garantir que não estão vendo o login
   }, [user, loading, router])
 
   if (loading) {
@@ -26,7 +32,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      {/* ml-60 = largura exata da sidebar (w-60 = 240px) */}
       <main className="flex-1 min-w-0 ml-60">
         <div className="min-h-screen p-6 w-full">
           {children}

@@ -494,27 +494,44 @@ export default function UsuariosPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b">
               <div>
-                <h2 className="text-lg font-semibold">Vincular Obras</h2>
+                <h2 className="text-lg font-semibold">Vincular Obra</h2>
                 <p className="text-sm text-gray-500">{vincularModal.usuario.nome}</p>
               </div>
               <button onClick={() => setVincularModal(null)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
             </div>
+            {/* Engenheiro/mestre: apenas 1 obra (radio) */}
+            {['engenheiro','mestre','pcp','almoxarife'].includes(vincularModal.usuario.perfil) && (
+              <div className="mx-5 mt-4 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700 flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                Selecione <strong>1 obra</strong>. Engenheiro acessa apenas a obra vinculada.
+              </div>
+            )}
             <div className="p-5 space-y-2 max-h-72 overflow-y-auto">
               {obras.length === 0
                 ? <p className="text-sm text-gray-400 text-center py-4">Nenhuma obra cadastrada.</p>
-                : obras.map(o => (
-                  <label key={o.id} className={clsx('flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors',
-                    obrasSel.includes(o.id) ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:bg-gray-50')}>
-                    <input type="checkbox" checked={obrasSel.includes(o.id)}
-                      onChange={e => e.target.checked ? setObrasSel(s => [...s, o.id]) : setObrasSel(s => s.filter(id => id !== o.id))}
-                      className="h-4 w-4 rounded accent-blue-600" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{o.nome}</p>
-                      <p className="text-xs text-gray-400">{o.status}</p>
-                    </div>
-                    {obrasSel.includes(o.id) && <Check className="h-4 w-4 text-blue-600 shrink-0" />}
-                  </label>
-                ))
+                : obras.map(o => {
+                  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes(vincularModal.usuario.perfil)
+                  const selected = obrasSel.includes(o.id)
+                  return (
+                    <label key={o.id} className={clsx('flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors',
+                      selected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:bg-gray-50')}>
+                      <input
+                        type={isRestrito ? 'radio' : 'checkbox'}
+                        name="obra_vinculo"
+                        checked={selected}
+                        onChange={() => {
+                          if (isRestrito) setObrasSel([o.id])
+                          else setObrasSel(s => selected ? s.filter(id => id !== o.id) : [...s, o.id])
+                        }}
+                        className="h-4 w-4 accent-blue-600" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{o.nome}</p>
+                        <p className="text-xs text-gray-400 capitalize">{o.status}</p>
+                      </div>
+                      {selected && <Check className="h-4 w-4 text-blue-600 shrink-0" />}
+                    </label>
+                  )
+                })
               }
             </div>
             <div className="flex justify-end gap-3 p-5 border-t">

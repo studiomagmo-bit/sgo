@@ -59,6 +59,24 @@ export const obras = {
     if (error) throw error
     return data ?? []
   },
+
+  /** Retorna a obra única do engenheiro (primeira vinculada) */
+  minhaObra: async (): Promise<any | null> => {
+    let uid = ''
+    try {
+      const cached = localStorage.getItem('sgo_user')
+      if (cached) uid = JSON.parse(cached)?.id ?? ''
+    } catch {}
+    if (!uid) return null
+    const { data } = await supabase
+      .from('usuarios_obra')
+      .select('obra_id, obras(*)')
+      .eq('usuario_id', uid)
+      .eq('ativo', true)
+      .limit(1)
+      .single()
+    return (data as any)?.obras ?? null
+  },
   detalhar: async (id: string) => {
     const { data, error } = await supabase.from('obras').select('*').eq('id', id).single()
     if (error) throw error

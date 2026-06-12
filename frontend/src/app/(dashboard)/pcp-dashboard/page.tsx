@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { dashboard as dashboardApi, obras as obrasApi, estruturaObra } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import {
   BarChart3, CheckCircle2, Clock, TrendingDown, TrendingUp,
   AlertTriangle, Loader2, Building2, HardHat, GitBranch,
@@ -256,6 +257,9 @@ function AtividadesSemEstrutura({ atividades }: { atividades: any[] }) {
 type Obra = { id: string; nome: string }
 
 export default function PcpDashboardPage() {
+  const { user } = useAuth()
+  const isGestor = ['administrador', 'gerente'].includes((user as any)?.perfil ?? '')
+
   const [obras, setObras]             = useState<Obra[]>([])
   const [atividades, setAtividades]   = useState<any[]>([])
   const [estruturaNos, setEstruturaNos] = useState<any[]>([])
@@ -291,7 +295,17 @@ export default function PcpDashboardPage() {
     }
   }
 
-  useEffect(() => { carregar() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Engenheiro: carrega sua obra automaticamente
+    obrasApi.listar().then(obs => {
+      if (!isGestor && obs.length === 1) {
+        setObraFiltro(obs[0].id)
+        carregar(obs[0].id)
+      } else {
+        carregar()
+      }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function trocarObra(id: string) {
     setObraFiltro(id)
@@ -374,7 +388,7 @@ export default function PcpDashboardPage() {
           onChange={e => trocarObra(e.target.value)}
           className="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
         >
-          <option value="todas">Todas as obras</option>
+          {isGestor && <option value="todas">Todas as obras</option>}
           {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
         </select>
         <span className="text-xs text-gray-400">{atividadesComDesvio.length} atividades</span>
