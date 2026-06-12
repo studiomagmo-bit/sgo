@@ -58,14 +58,7 @@ export default function ProducoesPage() {
   useEffect(() => {
     obrasApi.listar().then(obs => {
       setObras(obs)
-      // Engenheiro: auto-seleciona sua obra única
-      try {
-        const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
-        const perfisRestritos = ['engenheiro','mestre','pcp','almoxarife']
-        if (perfisRestritos.includes(u?.perfil) && obs.length === 1) {
-          setObraId(obs[0].id)
-        }
-      } catch {}
+      if (obs.length >= 1) setObraId(prev => prev || obs[0].id)
     })
   }, [])
 

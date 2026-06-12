@@ -96,7 +96,7 @@ export const atividades = {
   listar: async (params?: { obra_id?: string; status?: string; empreiteiro_id?: string }) => {
     let q = supabase.from('atividades')
       .select('*, obras(nome), empreiteiros(razao_social,nome_fantasia), estrutura_obra:estrutura_id(nome,tipo)')
-      .order('ordem', { ascending: true })
+      .order('criado_em', { ascending: true })
     if (params?.obra_id)       q = q.eq('obra_id', params.obra_id)
     if (params?.status)        q = q.eq('status', params.status)
     if (params?.empreiteiro_id) q = q.eq('empreiteiro_id', params.empreiteiro_id)
