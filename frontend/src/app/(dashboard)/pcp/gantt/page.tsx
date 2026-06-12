@@ -31,6 +31,8 @@ function addDays(d: string, n: number) {
 function today() { return new Date().toISOString().split('T')[0] }
 
 export default function GanttPage() {
+  const { user } = useAuth()
+  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
   const [obras, setObras]       = useState<any[]>([])
   const [obraId, setObraId]     = useState('')
   const [atividades, setAtividades] = useState<any[]>([])

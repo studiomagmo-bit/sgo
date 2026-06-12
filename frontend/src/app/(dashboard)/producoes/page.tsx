@@ -72,22 +72,27 @@ export default function ProducoesPage() {
   const carregarPendentes = useCallback(() => {
     if (!obraId) return
     setLoadingPend(true)
-    supabase
-      .from('atividades')
-      .select('*, empreiteiros(razao_social), estrutura_obra(nome)')
-      .eq('obra_id', obraId)
-      .in('status', ['pendente_validacao', 'em_andamento', 'impedida', 'reprovada'])
-      .order('atualizado_em', { ascending: false })
-      .then(({ data }) => setPendentes(data ?? []))
-      .finally(() => setLoadingPend(false))
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from('atividades')
+          .select('*, empreiteiros(razao_social), estrutura_obra(nome)')
+          .eq('obra_id', obraId)
+          .in('status', ['pendente_validacao', 'em_andamento', 'impedida', 'reprovada'])
+          .order('atualizado_em', { ascending: false })
+        setPendentes(data ?? [])
+      } finally {
+        setLoadingPend(false)
+      }
+    })()
   }, [obraId])
 
   const carregarProducoes = useCallback(() => {
     if (!obraId) return
     setLoadingProd(true)
     producoesApi.listar({ obra_id: obraId })
-      .then(setProducoes)
-      .finally(() => setLoadingProd(false))
+      .then(data => { setProducoes(data); setLoadingProd(false) })
+      .catch(() => setLoadingProd(false))
   }, [obraId])
 
   useEffect(() => {

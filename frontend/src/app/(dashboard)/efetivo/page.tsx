@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { obras as obrasApi, empreiteiros as empreiteirosApi, efetivos, colaboradores as colaboradoresApi } from '@/lib/sgoApi'
+import { useAuth } from '@/contexts/auth'
 import {
   Users, CalendarDays, Building2, HardHat, CheckCircle2,
   XCircle, Clock, AlertCircle, Save, RefreshCw, ChevronDown,
@@ -91,7 +92,7 @@ export default function EfetivoPage() {
       setEfetivo(ef)
 
       // Carrega colaboradores do empreiteiro
-      const cols: Colaborador[] = await colaboradoresApi.listar(empreteiroId)
+      const cols: Colaborador[] = await colaboradoresApi.listar({ empreiteiro_id: empreteiroId })
 
       // Carrega presença existente para este efetivo
       const presExistentes = await efetivos.listarPresenca(ef.id)

@@ -14,15 +14,18 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     if (!user?.construtora_id) return
     setLoadingConst(true)
-    supabase
-      .from('construtoras')
-      .select('*')
-      .eq('id', user.construtora_id)
-      .single()
-      .then(({ data }) => {
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from('construtoras')
+          .select('*')
+          .eq('id', user.construtora_id!)
+          .single()
         if (data) setConstrutora(data as Construtora)
-      })
-      .finally(() => setLoadingConst(false))
+      } finally {
+        setLoadingConst(false)
+      }
+    })()
   }, [user?.construtora_id])
 
   const perfilLabel: Record<string, string> = {

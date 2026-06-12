@@ -54,6 +54,12 @@ export const obras = {
     if (error) throw new Error(error.message)
     return data
   },
+  /** Alias para buscar — compatibilidade com páginas que chamam obras.detalhar() */
+  detalhar: async (id: string) => {
+    const { data, error } = await supabase.from('obras').select('*, estrutura_obra(*)').eq('id', id).single()
+    if (error) throw new Error(error.message)
+    return data
+  },
 }
 
 // ─── ESTRUTURA DA OBRA ────────────────────────────────────────
@@ -75,6 +81,11 @@ export const estruturaObra = {
     return data
   },
   deletar: async (id: string) => {
+    const { error } = await supabase.from('estrutura_obra').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+  },
+  /** Alias para deletar */
+  excluir: async (id: string) => {
     const { error } = await supabase.from('estrutura_obra').delete().eq('id', id)
     if (error) throw new Error(error.message)
   },
@@ -125,6 +136,15 @@ export const colaboradores = {
     if (error) throw new Error(error.message)
     return data
   },
+  atualizar: async (id: string, d: any) => {
+    const { data, error } = await supabase.from('colaboradores').update(d).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  excluir: async (id: string) => {
+    const { error } = await supabase.from('colaboradores').update({ ativo: false }).eq('id', id)
+    if (error) throw new Error(error.message)
+  },
 }
 
 // ─── EFETIVO DIÁRIO ───────────────────────────────────────────
@@ -149,6 +169,14 @@ export const efetivos = {
   salvarPresenca: async (efetivo_id: string, registros: { colaborador_id: string; status: string; hora_entrada?: string; hora_saida?: string }[]) => {
     const { data, error } = await supabase.from('efetivo_colaboradores')
       .upsert(registros.map(r => ({ ...r, efetivo_id })), { onConflict: 'efetivo_id,colaborador_id' }).select()
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
+  /** Salva lote de presenças com registro completo (presente, motivo, horas, etc.) */
+  salvarPresencaLote: async (registros: Record<string, any>[]) => {
+    if (!registros.length) return []
+    const { data, error } = await supabase.from('efetivo_colaboradores')
+      .upsert(registros as any, { onConflict: 'efetivo_id,colaborador_id' }).select()
     if (error) throw new Error(error.message)
     return data ?? []
   },
@@ -230,9 +258,10 @@ export const pendencias = {
 
 // ─── MEDIÇÕES ─────────────────────────────────────────────────
 export const medicoes = {
-  listar: async (params?: { obra_id?: string }) => {
+  listar: async (params?: { obra_id?: string; status?: string }) => {
     let q = supabase.from('medicoes').select('*, obras(nome), empreiteiros(razao_social)').order('criado_em', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
+    if (params?.status)  q = q.eq('status', params.status)
     const { data, error } = await q
     if (error) throw new Error(error.message)
     return data ?? []
@@ -368,6 +397,15 @@ export const portalApi = {
 
   // Obras vinculadas ao empreiteiro (via atividades + obra_empreiteiros)
   minhasObras: async (empreiteiro_id: string) => {
+    const { data } = await supabasePortal.from('atividades')
+      .select('obra_id, obras(id,nome,status,cidade,data_fim_prev,percentual_geral)')
+      .eq('empreiteiro_id', empreiteiro_id)
+    const seen = new Set<string>()
+    return (data ?? []).filter((a: any) => a.obras && !seen.has(a.obra_id) && seen.add(a.obra_id)).map((a: any) => a.obras)
+  },
+
+  /** Alias para minhasObras — compatibilidade */
+  minhasObrasVinculadas: async (empreiteiro_id: string) => {
     const { data } = await supabasePortal.from('atividades')
       .select('obra_id, obras(id,nome,status,cidade,data_fim_prev,percentual_geral)')
       .eq('empreiteiro_id', empreiteiro_id)

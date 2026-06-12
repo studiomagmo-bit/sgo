@@ -342,7 +342,7 @@ export default function ObraDetailPage() {
                 { label: 'Status',   value: obra.status },
                 { label: 'Área',     value: obra.area_total ? `${obra.area_total} m²` : '—' },
                 { label: 'Endereço', value: obra.endereco || '—' },
-                { label: 'CEP',      value: obra.cep || '—' },
+                { label: 'CEP',      value: (obra as any).cep || '—' },
                 { label: 'Início',   value: obra.data_inicio ? new Date(obra.data_inicio).toLocaleDateString('pt-BR') : '—' },
               ].map(f => (
                 <div key={f.label} className="space-y-0.5">

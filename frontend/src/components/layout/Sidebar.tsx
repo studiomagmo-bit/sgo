@@ -29,7 +29,6 @@ const NAV_GESTOR = [
   { divider: 'Empreiteiros' },
   { label: 'Empreiteiros',     icon: HardHat,         href: '/empreiteiros' },
   { label: 'Portal Empreit.',  icon: ExternalLink,    href: '/sgo/portal/login', external: true },
-  { label: 'Portal Empreit.',  icon: ExternalLink,    href: '/sgo/portal/login', external: true },
   { label: 'Efetivo Geral',    icon: Users,           href: '/empreiteiro-portal' },
   { label: 'Medições',         icon: DollarSign,      href: '/medicoes' },
   { divider: 'Registros' },

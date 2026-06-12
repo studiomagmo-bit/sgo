@@ -68,10 +68,15 @@ export default function DiarioPage() {
   const carregarDiarios = useCallback((id: string) => {
     if (!id) { setDiarios([]); return }
     setLoading(true)
-    supabase.from('diario_obra').select('*, obras(nome)').eq('obra_id', id)
-      .order('data', { ascending: false })
-      .then(({ data }) => setDiarios(data ?? []))
-      .finally(() => setLoading(false))
+    void (async () => {
+      try {
+        const { data } = await supabase.from('diario_obra').select('*, obras(nome)').eq('obra_id', id)
+          .order('data', { ascending: false })
+        setDiarios(data ?? [])
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [])
 
   useEffect(() => { carregarDiarios(obraId) }, [obraId, carregarDiarios])
