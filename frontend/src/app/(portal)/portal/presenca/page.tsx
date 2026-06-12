@@ -1,42 +1,44 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePortalAuth } from '@/contexts/portalAuth'
 import { portalApi } from '@/lib/sgoApi'
 import {
-  Users, CheckCircle2, XCircle, Save, RefreshCw,
-  Building2, CalendarDays, LogOut, HardHat, GitBranch,
-  Clock, AlertCircle,
+  Calendar, ChevronLeft, ChevronRight, Check,
+  Users, Building2, GitBranch, Loader2, HardHat, LogOut,
+  CheckCircle2, XCircle, FileText, Clock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
+import { toast } from 'sonner'
 
-const MOTIVOS = [
-  { value: 'atestado', label: 'Atestado' },
-  { value: 'falta_justificada', label: 'Falta justificada' },
-  { value: 'falta_injustificada', label: 'Falta injustificada' },
-  { value: 'folga', label: 'Folga' },
-  { value: 'ferias', label: 'Férias' },
-  { value: 'demissao', label: 'Demissão' },
-  { value: 'outro', label: 'Outro' },
-]
+type Status = 'presente' | 'falta' | 'atestado' | 'folga'
 
-function hoje() { return new Date().toISOString().split('T')[0] }
+const STATUS_CFG: Record<Status, { label: string; icon: any; bg: string; text: string; border: string }> = {
+  presente: { label: 'Presente',  icon: CheckCircle2, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300' },
+  falta:    { label: 'Falta',     icon: XCircle,      bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-300'     },
+  atestado: { label: 'Atestado',  icon: FileText,     bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-300'    },
+  folga:    { label: 'Folga',     icon: Clock,        bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-300'    },
+}
 
-export default function PortalPresencaPage() {
+function fmtDate(d: Date) { return d.toISOString().split('T')[0] }
+function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+function fmtDisplay(iso: string) {
+  return new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+export default function PresencaPortalPage() {
   const { portalUser, loadingPortal, logoutPortal } = usePortalAuth()
   const router = useRouter()
 
-  const [obras, setObras] = useState<any[]>([])
-  const [obraId, setObraId] = useState('')
-  const [data, setData] = useState(hoje())
-  const [efetivo, setEfetivo] = useState<any>(null)
-  const [colaboradores, setColaboradores] = useState<any[]>([])
-  const [presencas, setPresencas] = useState<Record<string, any>>({})
-  const [loading, setLoading] = useState(false)
-  const [salvando, setSalvando] = useState(false)
-  const [salvo, setSalvo] = useState(false)
-  const [erro, setErro] = useState('')
+  const [data, setData]             = useState(fmtDate(new Date()))
+  const [obras, setObras]           = useState<any[]>([])
+  const [obraId, setObraId]         = useState('')
+  const [colaboradores, setColab]   = useState<any[]>([])
+  const [presenca, setPresenca]     = useState<Record<string, Status>>({})
+  const [efetivoId, setEfetivoId]   = useState('')
+  const [loading, setLoading]       = useState(false)
+  const [saving, setSaving]         = useState(false)
 
   useEffect(() => {
     if (!loadingPortal && !portalUser) router.replace('/portal/login')
@@ -44,191 +46,233 @@ export default function PortalPresencaPage() {
 
   useEffect(() => {
     if (!portalUser) return
-    portalApi.minhasObras(portalUser.empreiteiro_id).then(obs => {
+    Promise.all([
+      portalApi.minhasObrasVinculadas(portalUser.empreiteiro_id),
+      portalApi.meusColaboradores(portalUser.empreiteiro_id),
+    ]).then(([obs, cols]) => {
       setObras(obs)
+      setColab(cols)
       if (obs.length === 1) setObraId(obs[0].id)
     })
   }, [portalUser])
 
-  useEffect(() => {
-    if (!obraId || !portalUser) return
-    carregarPresenca()
-  }, [obraId, data, portalUser])
-
-  async function carregarPresenca() {
+  const carregarPresenca = useCallback(async () => {
+    if (!obraId || !portalUser || colaboradores.length === 0) return
     setLoading(true)
-    setErro('')
-    setSalvo(false)
     try {
-      const ef = await portalApi.buscarOuCriarEfetivo(obraId, portalUser!.empreiteiro_id, data, portalUser!.construtora_id)
-      setEfetivo(ef)
-      const [cols, presExist] = await Promise.all([
-        portalApi.meusColaboradores(portalUser!.empreiteiro_id),
-        portalApi.listarPresenca(ef.id),
-      ])
-      setColaboradores(cols)
-      const map: Record<string, any> = {}
-      presExist.forEach((p: any) => { map[p.colaborador_id] = p })
-      const init: Record<string, any> = {}
-      cols.forEach((c: any) => {
-        init[c.id] = map[c.id] ?? { presente: true, motivo_ausencia: '', horas_trabalhadas: 8, observacao: '' }
-      })
-      setPresencas(init)
-    } catch (e: any) {
-      setErro(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+      const ef = await portalApi.buscarOuCriarEfetivo(
+        obraId, portalUser.empreiteiro_id, data, portalUser.construtora_id
+      )
+      setEfetivoId(ef.id)
+      const registros = await portalApi.listarPresenca(ef.id)
+      const map: Record<string, Status> = {}
+      // Inicializa todos como presente
+      colaboradores.forEach(c => { map[c.id] = 'presente' })
+      // Aplica os registros salvos
+      registros.forEach((r: any) => { map[r.colaborador_id] = r.status as Status })
+      setPresenca(map)
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Erro ao carregar presença')
+    } finally { setLoading(false) }
+  }, [obraId, data, portalUser, colaboradores])
 
-  function toggle(id: string) {
-    setPresencas(p => ({ ...p, [id]: { ...p[id], presente: !p[id].presente, motivo_ausencia: '' } }))
-  }
+  useEffect(() => { carregarPresenca() }, [carregarPresenca])
 
-  function set(id: string, campo: string, val: any) {
-    setPresencas(p => ({ ...p, [id]: { ...p[id], [campo]: val } }))
+  function toggleStatus(colabId: string) {
+    const ordem: Status[] = ['presente', 'falta', 'atestado', 'folga']
+    setPresenca(prev => {
+      const atual = prev[colabId] ?? 'presente'
+      const proximo = ordem[(ordem.indexOf(atual) + 1) % ordem.length]
+      return { ...prev, [colabId]: proximo }
+    })
   }
 
   async function salvar() {
-    if (!efetivo) return
-    setSalvando(true)
-    setErro('')
+    if (!efetivoId) { toast.error('Selecione a obra'); return }
+    setSaving(true)
     try {
       const registros = colaboradores.map(c => ({
-        efetivo_id: efetivo.id,
+        efetivo_id:     efetivoId,
         colaborador_id: c.id,
-        presente: presencas[c.id]?.presente ?? true,
-        motivo_ausencia: presencas[c.id]?.presente ? null : (presencas[c.id]?.motivo_ausencia || null),
-        horas_trabalhadas: presencas[c.id]?.presente ? (presencas[c.id]?.horas_trabalhadas ?? 8) : 0,
-        observacao: presencas[c.id]?.observacao || null,
+        status:         presenca[c.id] ?? 'presente',
       }))
       await portalApi.salvarPresenca(registros)
-      setSalvo(true)
-      setTimeout(() => setSalvo(false), 3000)
-    } catch (e: any) {
-      setErro(e.message)
-    } finally {
-      setSalvando(false)
-    }
+      toast.success('Presença salva!')
+    } catch (err: any) { toast.error(err?.message ?? 'Erro') }
+    finally { setSaving(false) }
   }
 
-  const presentes = colaboradores.filter(c => presencas[c.id]?.presente).length
-  const ausentes  = colaboradores.length - presentes
-  const horas     = colaboradores.filter(c => presencas[c.id]?.presente).reduce((s, c) => s + Number(presencas[c.id]?.horas_trabalhadas || 8), 0)
+  if (loadingPortal || !portalUser) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+    </div>
+  )
 
-  if (loadingPortal || !portalUser) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><RefreshCw className="h-7 w-7 animate-spin text-blue-500" /></div>
+  const nomeEmp = portalUser.empreiteiros?.nome_fantasia || portalUser.empreiteiros?.razao_social
+  const presentes = Object.values(presenca).filter(s => s === 'presente').length
+  const faltas    = Object.values(presenca).filter(s => s === 'falta').length
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center"><HardHat className="h-4 w-4 text-white" /></div>
-          <div>
-            <p className="text-sm font-bold text-gray-900 leading-tight">Presença Diária</p>
-            <p className="text-xs text-gray-400">{portalUser.empreiteiros?.razao_social}</p>
+      {/* Topbar */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-xl bg-amber-500 flex items-center justify-center">
+              <HardHat className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-sm font-bold text-gray-900">{nomeEmp}</p>
           </div>
+          <button onClick={() => { logoutPortal(); router.replace('/portal/login') }}
+            className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1">
+            <LogOut className="h-3.5 w-3.5" /> Sair
+          </button>
         </div>
-        <button onClick={() => { logoutPortal(); router.replace('/portal/login') }} className="text-red-400 hover:bg-red-900/20 rounded-lg p-2"><LogOut className="h-4 w-4" /></button>
       </header>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-gray-200 bg-gray-50">
-        {[{ href: '/portal/home', label: 'Início', icon: Building2 }, { href: '/portal/presenca', label: 'Presença', icon: Users }, { href: '/portal/atividades', label: 'Atividades', icon: GitBranch }].map(item => {
-          const Icon = item.icon
-          const active = item.href.includes('presenca')
-          return <Link key={item.href} href={item.href} className={clsx('flex-1 flex flex-col items-center gap-1 py-3 text-xs', active ? 'text-blue-400' : 'text-gray-500')}><Icon className="h-5 w-5" />{item.label}</Link>
-        })}
-      </nav>
-
-      <main className="pt-16 pb-24 px-4 max-w-lg mx-auto space-y-4">
-        <div className="pt-4">
-          <h1 className="text-xl font-bold text-gray-900">Presença Diária</h1>
-          <p className="text-gray-400 text-sm">Marque quem está presente hoje</p>
+      <div className="pt-16 pb-28 max-w-2xl mx-auto px-4">
+        <div className="py-4">
+          <h1 className="text-xl font-bold text-gray-900">Presença</h1>
+          <p className="text-sm text-gray-500">Registre a presença da sua equipe</p>
         </div>
 
-        {/* Filtros */}
-        <div className="space-y-2">
-          <select value={obraId} onChange={e => setObraId(e.target.value)} className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
-            <option value="">Selecionar obra...</option>
+        {/* Navegação de data */}
+        <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 mb-4">
+          <button onClick={() => setData(fmtDate(addDays(new Date(data + 'T12:00:00'), -1)))}
+            className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+            <ChevronLeft className="h-5 w-5 text-gray-500" />
+          </button>
+          <div className="text-center">
+            <p className="font-semibold text-gray-900 capitalize">{fmtDisplay(data)}</p>
+            {data === fmtDate(new Date()) && (
+              <span className="text-xs bg-blue-100 text-blue-600 rounded-full px-2 py-0.5 font-medium">Hoje</span>
+            )}
+          </div>
+          <button
+            onClick={() => setData(fmtDate(addDays(new Date(data + 'T12:00:00'), 1)))}
+            disabled={data >= fmtDate(new Date())}
+            className="p-2 rounded-xl hover:bg-gray-100 disabled:opacity-30 transition-colors">
+            <ChevronRight className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Obra (só mostra se tiver mais de 1) */}
+        {obras.length > 1 && (
+          <select value={obraId} onChange={e => setObraId(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 shadow-sm">
+            <option value="">Selecione a obra...</option>
             {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
           </select>
-          <input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full rounded-lg bg-white border border-gray-200 px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500" />
-        </div>
-
-        {erro && <div className="rounded-lg bg-red-900/40 border border-red-700 px-3 py-2 text-sm text-red-300 flex gap-2"><AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{erro}</div>}
-
-        {!obraId && <div className="rounded-xl border border-gray-200 bg-white p-8 text-center"><Building2 className="h-8 w-8 text-gray-600 mx-auto mb-2" /><p className="text-gray-500 text-sm">Selecione uma obra</p></div>}
-
-        {loading && obraId && <div className="text-gray-400 text-sm animate-pulse flex gap-2"><RefreshCw className="h-4 w-4 animate-spin" />Carregando colaboradores...</div>}
-
-        {!loading && obraId && (
-          <>
-            {/* KPIs */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-emerald-900/20 border border-emerald-700/40 p-3 text-center">
-                <p className="text-2xl font-bold text-emerald-300">{presentes}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Presentes</p>
-              </div>
-              <div className="rounded-xl bg-red-900/20 border border-red-700/40 p-3 text-center">
-                <p className="text-2xl font-bold text-red-300">{ausentes}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Ausentes</p>
-              </div>
-              <div className="rounded-xl bg-blue-900/20 border border-blue-700/40 p-3 text-center">
-                <p className="text-2xl font-bold text-blue-300">{horas}h</p>
-                <p className="text-xs text-gray-400 mt-0.5">Total hrs</p>
-              </div>
-            </div>
-
-            {colaboradores.length === 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-                <Users className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">Nenhum colaborador cadastrado.</p>
-                <p className="text-gray-600 text-xs mt-1">Fale com o gestor para cadastrá-los.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {colaboradores.map(c => {
-                  const p = presencas[c.id] ?? { presente: true }
-                  return (
-                    <div key={c.id} className={clsx('rounded-xl border p-4', p.presente ? 'border-gray-200 bg-white' : 'border-red-800/40 bg-red-900/10')}>
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => toggle(c.id)} className={clsx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all', p.presente ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400' : 'border-red-500 bg-red-500/20 text-red-400')}>
-                          {p.presente ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                        </button>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{c.nome}</p>
-                          {c.funcao && <p className="text-xs text-gray-400">{c.funcao}</p>}
-                        </div>
-                        <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium border', p.presente ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/40' : 'bg-red-900/40 text-red-300 border-red-700/40')}>
-                          {p.presente ? 'Presente' : 'Ausente'}
-                        </span>
-                      </div>
-                      {p.presente ? (
-                        <div className="mt-3 flex items-center gap-2">
-                          <Clock className="h-3.5 w-3.5 text-gray-500" />
-                          <label className="text-xs text-gray-400">Horas:</label>
-                          <input type="number" min={0} max={24} step={0.5} value={p.horas_trabalhadas ?? 8} onChange={e => set(c.id, 'horas_trabalhadas', Number(e.target.value))} className="w-16 rounded bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs text-gray-900 text-center focus:outline-none" />
-                          <span className="text-xs text-gray-500">h</span>
-                        </div>
-                      ) : (
-                        <select value={p.motivo_ausencia ?? ''} onChange={e => set(c.id, 'motivo_ausencia', e.target.value)} className="mt-3 w-full rounded-lg bg-gray-100 border border-gray-200 px-2 py-1.5 text-xs text-gray-900 focus:outline-none">
-                          <option value="">Motivo da ausência...</option>
-                          {MOTIVOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                        </select>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {colaboradores.length > 0 && (
-              <button onClick={salvar} disabled={salvando} className={clsx('w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-all disabled:opacity-60', salvo ? 'bg-emerald-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white')}>
-                {salvando ? <><RefreshCw className="h-4 w-4 animate-spin" />Salvando...</> : salvo ? <><CheckCircle2 className="h-4 w-4" />Salvo!</> : <><Save className="h-4 w-4" />Salvar Presença</>}
-              </button>
-            )}
-          </>
         )}
-      </main>
+        {obras.length === 1 && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 mb-4 text-sm text-blue-700 font-medium">
+            <Building2 className="h-4 w-4 text-blue-500" />{obras[0].nome}
+          </div>
+        )}
+
+        {/* Resumo */}
+        {colaboradores.length > 0 && obraId && (
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            {(['presente','falta','atestado','folga'] as Status[]).map(s => {
+              const cfg = STATUS_CFG[s]
+              const count = Object.values(presenca).filter(v => v === s).length
+              return (
+                <div key={s} className={clsx('rounded-xl border p-3 text-center', cfg.bg, cfg.border)}>
+                  <p className={clsx('text-xl font-bold', cfg.text)}>{count}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{cfg.label}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Legenda — toque para alternar */}
+        {colaboradores.length > 0 && obraId && (
+          <p className="text-xs text-gray-400 text-center mb-3">
+            Toque no card para alternar: Presente → Falta → Atestado → Folga
+          </p>
+        )}
+
+        {/* Lista de colaboradores */}
+        {!obraId ? (
+          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-gray-400 text-sm shadow-sm">
+            Selecione a obra para registrar presença
+          </div>
+        ) : loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div>
+        ) : colaboradores.length === 0 ? (
+          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+            <Users className="h-10 w-10 text-gray-200 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">Nenhum colaborador cadastrado.</p>
+            <Link href="/portal/colaboradores" className="text-blue-500 text-sm hover:underline mt-1 inline-block">
+              Cadastrar colaboradores →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {colaboradores.map(c => {
+              const status = presenca[c.id] ?? 'presente'
+              const cfg    = STATUS_CFG[status]
+              const Icon   = cfg.icon
+              return (
+                <button key={c.id} onClick={() => toggleStatus(c.id)}
+                  className={clsx(
+                    'w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left transition-all active:scale-[0.98]',
+                    cfg.bg, cfg.border
+                  )}>
+                  <div className={clsx('h-10 w-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0',
+                    status === 'presente' ? 'bg-emerald-100 text-emerald-700' :
+                    status === 'falta'    ? 'bg-red-100 text-red-700' :
+                    status === 'atestado' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-600'
+                  )}>
+                    {c.nome.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{c.nome}</p>
+                    <p className="text-xs text-gray-500">{c.funcao}</p>
+                  </div>
+                  <div className={clsx('flex items-center gap-1.5 rounded-full px-3 py-1.5 border shrink-0', cfg.bg, cfg.border, cfg.text)}>
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="text-xs font-semibold">{cfg.label}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Botão salvar fixo */}
+      {colaboradores.length > 0 && obraId && (
+        <div className="fixed bottom-16 left-0 right-0 px-4 pb-2 z-30">
+          <div className="max-w-2xl mx-auto">
+            <button onClick={salvar} disabled={saving}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 shadow-lg shadow-blue-200 transition-all">
+              {saving ? <><Loader2 className="h-4 w-4 animate-spin" />Salvando...</> : <><Check className="h-5 w-5" />Salvar Presença — {presentes} presentes</>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-40">
+        {[
+          { href:'/portal/home',         icon:Building2, label:'Início' },
+          { href:'/portal/atividades',    icon:GitBranch, label:'Atividades' },
+          { href:'/portal/colaboradores', icon:Users,     label:'Equipe' },
+          { href:'/portal/presenca',      icon:Calendar,  label:'Presença' },
+        ].map(item => {
+          const Icon = item.icon
+          return (
+            <Link key={item.href} href={item.href}
+              className={clsx('flex-1 flex flex-col items-center gap-1 py-2.5 text-xs font-medium',
+                item.href.includes('presenca') ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600')}>
+              <Icon className="h-5 w-5" />{item.label}
+            </Link>
+          )
+        })}
+      </nav>
     </div>
   )
 }

@@ -618,6 +618,47 @@ export const portalApi = {
     return novo
   },
 
+
+  /** Obras vinculadas ao empreiteiro via obra_empreiteiros */
+  minhasObrasVinculadas: async (empreiteiro_id: string) => {
+    const { data, error } = await supabasePortal
+      .from('obra_empreiteiros')
+      .select('obra_id, obras(id, nome, status, percentual_geral, data_inicio, data_fim_prev, tipo, cidade)')
+      .eq('empreiteiro_id', empreiteiro_id)
+    if (error) {
+      // Fallback: busca via atividades
+      return portalApi.minhasObras(empreiteiro_id)
+    }
+    return (data ?? []).map((r: any) => r.obras).filter(Boolean)
+  },
+
+  /** Criar colaborador do empreiteiro */
+  criarColaborador: async (d: {
+    empreiteiro_id: string
+    construtora_id: string
+    nome: string
+    cpf?: string
+    funcao?: string
+    telefone?: string
+  }) => {
+    const { data, error } = await supabasePortal
+      .from('colaboradores')
+      .insert(d)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  /** Dashboard do empreiteiro */
+  meuDashboard: async (empreiteiro_id: string) => {
+    const [atividades, colaboradores] = await Promise.all([
+      portalApi.minhasAtividades(empreiteiro_id),
+      portalApi.meusColaboradores(empreiteiro_id),
+    ])
+    return { atividades, colaboradores }
+  },
+
   /** Salvar presença (lote) */
   salvarPresenca: async (registros: any[]) => {
     const { data, error } = await supabasePortal
