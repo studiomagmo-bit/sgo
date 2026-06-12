@@ -28,7 +28,8 @@ export function useObraContext(defaultId = ''): ObraContext {
       if (obs.length >= 1 && (!obraId || isRestrito)) {
         setObraId(obs[0].id)
       }
-    }).finally(() => setLoading(false))
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [isRestrito]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSetObraId = useCallback((id: string) => {

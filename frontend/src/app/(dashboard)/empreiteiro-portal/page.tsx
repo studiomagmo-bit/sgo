@@ -45,7 +45,8 @@ export default function EfetivoDashboardPage() {
       setObras(ob)
       setEfetivos(ef.data ?? [])
       setEmp(emp.data ?? [])
-    }).finally(() => setLoading(false))
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   // Métricas

@@ -35,7 +35,7 @@ export default function ColaboradoresPortalPage() {
     if (!portalUser) return
     setLoading(true)
     portalApi.meusColaboradores(portalUser.empreiteiro_id)
-      .then(setColab).finally(() => setLoading(false))
+      .then(d => { setColab(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }
   useEffect(() => { if (portalUser) carregar() }, [portalUser]) // eslint-disable-line
 

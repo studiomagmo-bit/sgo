@@ -55,7 +55,7 @@ export default function InspecoesPage() {
     if (!obraId) return
     setLoading(true)
     inspecoesApi.listar({ obra_id: obraId, status: filtroStatus || undefined })
-      .then(setInspecoes).finally(() => setLoading(false))
+      .then(d => { setInspecoes(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }, [obraId, filtroStatus])
 
   function abrirModal() {
@@ -66,7 +66,6 @@ export default function InspecoesPage() {
       setLoadingAtiv(true)
       pcpAtividades.listar({ obra_id: obraId })
         .then(d => setAtividadesLista(d as Atividade[]))
-        .finally(() => setLoadingAtiv(false))
     }
     setShowModal(true)
   }
@@ -105,7 +104,7 @@ export default function InspecoesPage() {
         setObraId(form.obra_id)
         setLoading(true)
         inspecoesApi.listar({ obra_id: form.obra_id, status: filtroStatus || undefined })
-          .then(setInspecoes).finally(() => setLoading(false))
+          .then(d => { setInspecoes(d); () => setLoading(false) }).catch(() => () => setLoading(false))
       }
     } catch (err: any) {
       toast.error(err?.message ?? 'Erro ao criar inspeção.')

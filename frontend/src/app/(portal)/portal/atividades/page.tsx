@@ -447,7 +447,7 @@ function AtividadesContent() {
     if (!portalUser) return
     setLoading(true)
     portalApi.minhasAtividades(portalUser.empreiteiro_id, obraId||undefined)
-      .then(setAtivs).finally(() => setLoading(false))
+      .then(d => { setAtivs(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }, [portalUser, obraId])
 
   useEffect(() => { carregar() }, [carregar])

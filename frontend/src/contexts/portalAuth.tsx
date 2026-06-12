@@ -60,7 +60,9 @@ export function PortalAuthProvider({ children }: { children: ReactNode }) {
       }
     }).catch(() => {
       setPortalUser(null)
-    }).finally(() => setLoadingPortal(false))
+      setLoadingPortal(false)
+    })
+    setLoadingPortal(false)
   }, [])
 
   const loginPortal = async (email: string, senha: string) => {

@@ -24,7 +24,7 @@ export default function ObrasPage() {
   const [filtroStatus, setFiltroStatus] = useState('')
 
   useEffect(() => {
-    obrasApi.listar().then(setObras).finally(() => setLoading(false))
+    obrasApi.listar().then(d => { setObras(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }, [])
 
   const filtradas = obras.filter(o => {

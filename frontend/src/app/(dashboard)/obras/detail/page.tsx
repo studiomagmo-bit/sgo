@@ -99,8 +99,7 @@ export default function ObraDetailPage() {
     setId(obraId)
     if (!obraId) { setLoading(false); return }
     obrasApi.detalhar(obraId)
-      .then(setObra)
-      .finally(() => setLoading(false))
+      .then(d => { setObra(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }, [])
 
   // Carrega estrutura quando a aba é selecionada ou na montagem
@@ -111,7 +110,6 @@ export default function ObraDetailPage() {
       .listar(id)
       .then(setEstrutura)
       .catch(() => setEstrutura([]))
-      .finally(() => setLoadingEstrutura(false))
   }, [id])
 
   // Pré-preenche o formulário com dados da obra ao abrir o modal

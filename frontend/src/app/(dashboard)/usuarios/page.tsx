@@ -101,7 +101,6 @@ export default function UsuariosPage() {
         }
       })
       .catch(e => toast.error(e.message))
-      .finally(() => setLoading(false))
   }
 
   useEffect(() => { carregarTudo() }, []) // eslint-disable-line react-hooks/exhaustive-deps

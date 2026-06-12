@@ -33,7 +33,7 @@ export default function EquipamentosPage() {
 
   function carregarLista() {
     setLoading(true)
-    equipamentosApi.listar().then(setEquips).finally(() => setLoading(false))
+    equipamentosApi.listar().then(d => { setEquips(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }
 
   useEffect(() => {

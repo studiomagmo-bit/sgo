@@ -47,7 +47,8 @@ export default function PortalHomePage() {
       setObras(obs)
       setAtividades(ativs)
       setColab(cols)
-    }).finally(() => setLoading(false))
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [portalUser])
 
   if (loadingPortal || !portalUser) return (

@@ -71,14 +71,14 @@ export default function MedicoesPage() {
     if (!obraId) return
     setLoading(true)
     medicoesApi.listar({ obra_id: obraId, status: filtroStatus || undefined })
-      .then(setMedicoes).finally(() => setLoading(false))
+      .then(d => { setMedicoes(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }, [obraId, filtroStatus])
 
   const recarregar = () => {
     if (!obraId) return
     setLoading(true)
     medicoesApi.listar({ obra_id: obraId, status: filtroStatus || undefined })
-      .then(setMedicoes).finally(() => setLoading(false))
+      .then(d => { setMedicoes(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }
 
   const totalBruto = medicoes.reduce((s, m) => s + Number(m.valor_bruto),  0)

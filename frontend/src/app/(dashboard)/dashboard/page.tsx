@@ -490,7 +490,6 @@ export default function DashboardPage() {
     dashboardApi.executivo()
       .then(setData)
       .catch(() => setData({ obras: [], atividades: [], pendencias: [], inspecoes: [], efetivosHoje: [], empreiteiros: [], medicoes: [] }))
-      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return (

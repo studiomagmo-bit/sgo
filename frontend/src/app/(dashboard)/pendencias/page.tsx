@@ -66,7 +66,7 @@ export default function PendenciasPage() {
     if (!obraId) return
     setLoading(true)
     pendenciasApi.listar({ obra_id: obraId, status: filtroStatus || undefined })
-      .then(setPendencias).finally(() => setLoading(false))
+      .then(d => { setPendencias(d); () => setLoading(false) }).catch(() => () => setLoading(false))
   }, [obraId, filtroStatus])
 
   const abertas = pendencias.filter(p => !['validada','cancelada'].includes(p.status)).length
@@ -119,7 +119,7 @@ export default function PendenciasPage() {
         setObraId(form.obra_id)
         setLoading(true)
         pendenciasApi.listar({ obra_id: form.obra_id, status: filtroStatus || undefined })
-          .then(setPendencias).finally(() => setLoading(false))
+          .then(d => { setPendencias(d); () => setLoading(false) }).catch(() => () => setLoading(false))
       }
     } catch (err: any) {
       toast.error(err?.message ?? 'Erro ao criar pendência.')

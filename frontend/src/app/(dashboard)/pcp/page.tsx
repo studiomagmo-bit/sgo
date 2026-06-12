@@ -129,11 +129,16 @@ export default function PCPPage() {
   const carregarAtividades = () => {
     if (!obraId) return
     setLoading(true)
-    pcpAtividades
-      .listar({ obra_id: obraId, status: filtroStatus || undefined })
-      .then(setAtividades)
-      .catch(() => toast.error('Erro ao carregar atividades'))
-      .finally(() => setLoading(false))
+    void (async () => {
+      try {
+        const data = await pcpAtividades.listar({ obra_id: obraId, status: filtroStatus || undefined })
+        setAtividades(data)
+      } catch {
+        toast.error('Erro ao carregar atividades')
+      } finally {
+        setLoading(false)
+      }
+    })()
   }
 
   useEffect(() => { carregarAtividades() }, [obraId, filtroStatus]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -147,11 +152,16 @@ export default function PCPPage() {
     }
     setLoadingEstrutura(true)
     resetEstrutura()
-    estruturaObra
-      .listar(form.obra_id)
-      .then(nos => setEstruturaNos(nos as EstruturaNo[]))
-      .catch(() => setEstruturaNos([]))
-      .finally(() => setLoadingEstrutura(false))
+    void (async () => {
+      try {
+        const nos = await estruturaObra.listar(form.obra_id)
+        setEstruturaNos(nos as EstruturaNo[])
+      } catch {
+        setEstruturaNos([])
+      } finally {
+        setLoadingEstrutura(false)
+      }
+    })()
   }, [form.obra_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Helpers cascata ──

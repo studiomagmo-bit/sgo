@@ -122,8 +122,16 @@ export function Sidebar() {
           }
           const Icon = item.icon!
           const isExternal = (item as any).external === true
-          const isActive = !isExternal && (pathname === item.href ||
-            (item.href !== '/dashboard' && item.href !== '/pcp-dashboard' && pathname.startsWith(item.href)))
+          const isActive = !isExternal && (() => {
+            if (pathname === item.href) return true
+            // Rotas que NÃO devem ativar sub-rotas
+            const exactOnly = ['/dashboard', '/pcp-dashboard', '/pcp', '/efetivo', '/producoes',
+              '/inspecoes', '/pendencias', '/empreiteiros', '/medicoes', '/diario',
+              '/usuarios', '/configuracoes', '/equipamentos', '/empreiteiro-portal', '/obras']
+            if (exactOnly.includes(item.href)) return false
+            // Para as demais, só ativa se o próximo char for '/' ou fim de string
+            return pathname.startsWith(item.href + '/')
+          })()
 
           // Links externos (portal do empreiteiro) abrem em nova aba
           if (isExternal) {

@@ -78,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         // Sempre busca do banco na inicialização — ignora cache de perfil
         fetchPerfil(session.user.id, session.access_token)
-          .finally(() => setLoading(false))
       } else {
         // Sem sessão — tenta cache apenas para mostrar algo enquanto carrega
         try {

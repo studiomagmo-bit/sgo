@@ -378,7 +378,7 @@ export default function ProducoesPage() {
                   setAtividadesMod([])
                   if (e.target.value) {
                     setLoadingAtiv(true)
-                    pcpAtividades.listar({ obra_id: e.target.value }).then(setAtividadesMod).finally(() => setLoadingAtiv(false))
+                    pcpAtividades.listar({ obra_id: e.target.value }).then(d => { setAtividadesMod(d); () => setLoadingAtiv(false) }).catch(() => () => setLoadingAtiv(false))
                   }
                 }} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Selecione...</option>

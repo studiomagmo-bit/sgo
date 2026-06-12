@@ -77,7 +77,8 @@ export default function GanttPage() {
       setAtividades(a.data ?? [])
       setEstruturas(e.data ?? [])
       setEmpreiteiros(emp.data ?? [])
-    }).finally(() => setLoading(false))
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [obraId])
 
   // ─── Calcular timeline ────────────────────────────────────────
