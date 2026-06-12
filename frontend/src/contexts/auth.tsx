@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(userData)
     setToken(accessToken)
+    setLoading(false)
 
     // Salva no cache MAS com versão — para invalidar caches antigos
     try {
@@ -77,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         // Sempre busca do banco na inicialização — ignora cache de perfil
-        fetchPerfil(session.user.id, session.access_token)
+        fetchPerfil(session.user.id, session.access_token).catch(() => setLoading(false))
       } else {
         // Sem sessão — tenta cache apenas para mostrar algo enquanto carrega
         try {
