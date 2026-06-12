@@ -500,29 +500,16 @@ export const portalApi = {
     email: string
     senha: string
   }) => {
-    // Usa cliente separado (supabaseSignup) para não deslogar o gestor
-    const { data: authData, error: authErr } = await supabaseSignup.auth.signUp({
-      email: dados.email,
-      password: dados.senha,
+    // Usa função SQL SECURITY DEFINER para criar o usuário sem disparar e-mail
+    const { data, error } = await supabase.rpc('criar_acesso_empreiteiro', {
+      p_empreiteiro_id: dados.empreiteiro_id,
+      p_construtora_id: dados.construtora_id,
+      p_nome:           dados.nome,
+      p_email:          dados.email,
+      p_senha:          dados.senha,
     })
-    if (authErr) throw authErr
-    const userId = authData.user?.id
-    if (!userId) throw new Error('Falha ao criar usuário de autenticação')
-
-    // Insere perfil em usuarios_empreiteiro usando o cliente principal
-    const { error: insertErr } = await supabase
-      .from('usuarios_empreiteiro')
-      .insert({
-        id: userId,
-        empreiteiro_id: dados.empreiteiro_id,
-        construtora_id: dados.construtora_id,
-        nome: dados.nome,
-        email: dados.email,
-        perfil: 'administrador',
-        ativo: true,
-      })
-    if (insertErr) throw insertErr
-    return { userId, email: dados.email }
+    if (error) throw error
+    return { userId: data, email: dados.email }
   },
 
   /** Lista acessos criados para um empreiteiro */
