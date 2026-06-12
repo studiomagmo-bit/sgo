@@ -38,6 +38,8 @@ const formInicial: FormData = {
 }
 
 export default function MedicoesPage() {
+  const { user } = useAuth()
+  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
   const [obras, setObras]               = useState<Obra[]>([])
   const [obraId, setObraId]             = useState('')
   const [medicoes, setMedicoes]         = useState<Medicao[]>([])

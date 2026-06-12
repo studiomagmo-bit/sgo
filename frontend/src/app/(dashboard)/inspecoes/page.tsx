@@ -16,6 +16,8 @@ const statusConfig: Record<string, { label: string; cls: string; icon: any }> = 
 const hoje = new Date().toISOString().slice(0, 10)
 
 export default function InspecoesPage() {
+  const { user } = useAuth()
+  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
   const [obras, setObras]           = useState<Obra[]>([])
   const [obraId, setObraId]         = useState('')
   const [inspecoes, setInspecoes]   = useState<any[]>([])

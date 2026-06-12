@@ -91,6 +91,8 @@ const inputCls =
 // ─── Página principal ─────────────────────────────────────────
 export default function PCPPage() {
   // ── Dados de referência ──
+  const { user } = useAuth()
+  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
   const [obras, setObras]               = useState<Obra[]>([])
   const [empreiteiros, setEmpreiteiros] = useState<Empreiteiro[]>([])
 
@@ -348,8 +350,8 @@ export default function PCPPage() {
                   ?? (empreiteiros.find(e => e.id === (a as any).empreiteiro_id)?.razao_social)
                   ?? '—'
                 const prazo    = [
-                  a.data_inicio_prev ? new Date(a.data_inicio_prev).toLocaleDateString('pt-BR') : null,
-                  a.data_fim_prev    ? new Date(a.data_fim_prev).toLocaleDateString('pt-BR')    : null,
+                  a.data_inicio_prev ? new Date(a.data_inicio_prev + 'T12:00:00').toLocaleDateString('pt-BR') : null,
+                  a.data_fim_prev    ? new Date(a.data_fim_prev + 'T12:00:00').toLocaleDateString('pt-BR')    : null,
                 ].filter(Boolean).join(' → ') || '—'
 
                 return (

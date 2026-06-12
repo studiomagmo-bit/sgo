@@ -24,6 +24,8 @@ const STATUS_OPCOES = [
 
 export default function PendenciasPage() {
   // ── listagem ─────────────────────────────────────────────────
+  const { user } = useAuth()
+  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
   const [obras, setObras]           = useState<Obra[]>([])
   const [obraId, setObraId]         = useState('')
   const [pendencias, setPendencias] = useState<Pendencia[]>([])

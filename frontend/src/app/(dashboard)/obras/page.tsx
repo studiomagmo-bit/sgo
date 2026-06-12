@@ -116,7 +116,7 @@ export default function ObrasPage() {
                   {obra.data_fim_prev && (
                     <div className="flex items-center gap-1.5 text-xs text-gray-500">
                       <Calendar className="h-3 w-3" />
-                      Prazo: {new Date(obra.data_fim_prev).toLocaleDateString('pt-BR')}
+                      Prazo: {new Date(obra.data_fim_prev + 'T12:00:00').toLocaleDateString('pt-BR')}
                     </div>
                   )}
                 </div>

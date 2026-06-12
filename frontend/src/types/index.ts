@@ -334,6 +334,10 @@ export interface DiarioObra {
   total_fotos: number
   descricao_geral?: string
   publicado: boolean
+  ocorrencias?: string
+  notas_adicionais?: string
+  clima?: string
+  temperatura?: number
   criado_em: string
 }
 
