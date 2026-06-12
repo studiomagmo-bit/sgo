@@ -68,8 +68,16 @@ export default function PresencaPortalPage() {
       const map: Record<string, Status> = {}
       // Inicializa todos como presente
       colaboradores.forEach(c => { map[c.id] = 'presente' })
-      // Aplica os registros salvos
-      registros.forEach((r: any) => { map[r.colaborador_id] = r.status as Status })
+      // Aplica os registros salvos (converte presente+motivo_ausencia → status)
+      registros.forEach((r: any) => {
+        if (r.status) {
+          map[r.colaborador_id] = r.status as Status
+        } else if (r.presente === false) {
+          map[r.colaborador_id] = (r.motivo_ausencia as Status) || 'falta'
+        } else {
+          map[r.colaborador_id] = 'presente'
+        }
+      })
       setPresenca(map)
     } catch (err: any) {
       toast.error(err?.message ?? 'Erro ao carregar presença')
@@ -91,11 +99,16 @@ export default function PresencaPortalPage() {
     if (!efetivoId) { toast.error('Selecione a obra'); return }
     setSaving(true)
     try {
-      const registros = colaboradores.map(c => ({
-        efetivo_id:     efetivoId,
-        colaborador_id: c.id,
-        status:         presenca[c.id] ?? 'presente',
-      }))
+      const registros = colaboradores.map(c => {
+        const s = presenca[c.id] ?? 'presente'
+        return {
+          efetivo_id:      efetivoId,
+          colaborador_id:  c.id,
+          presente:        s === 'presente',
+          motivo_ausencia: s === 'falta' ? 'falta' : s === 'atestado' ? 'atestado' : s === 'folga' ? 'folga' : null,
+          horas_trabalhadas: s === 'presente' ? 8 : 0,
+        }
+      })
       await portalApi.salvarPresenca(registros)
       toast.success('Presença salva!')
     } catch (err: any) { toast.error(err?.message ?? 'Erro') }
