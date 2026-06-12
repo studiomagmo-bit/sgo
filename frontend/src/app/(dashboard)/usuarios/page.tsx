@@ -592,14 +592,14 @@ export default function UsuariosPage() {
                 <CheckCircle2 className="h-12 w-12 text-teal-500 mx-auto mb-3" />
                 <h3 className="font-semibold text-gray-900 text-lg mb-1">Acesso criado!</h3>
                 <p className="text-gray-500 text-sm mb-1">E-mail: <strong>{acessoForm.email}</strong></p>
-                <p className="text-gray-400 text-xs mb-5">Portal em <strong className="text-blue-500">/portal/login</strong></p>
+                <p className="text-gray-400 text-xs mb-5">Portal: <strong className="text-blue-500 select-all">studiomagmo-bit.github.io/sgo/portal/login</strong></p>
                 <button onClick={() => setShowAcesso(false)} className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">Fechar</button>
               </div>
             ) : (
               <form onSubmit={criarAcesso} className="px-5 py-4 space-y-4">
                 <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 text-xs text-blue-700 flex gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  O empreiteiro acessará o portal em <strong>/portal/login</strong> com e-mail e senha.
+                  O empreiteiro acessará o portal em <strong>studiomagmo-bit.github.io/sgo/portal/login</strong>
                 </div>
                 {[
                   { key: 'nome',  label: 'Nome do responsável *', type: 'text',  placeholder: 'Nome completo' },

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>SGO — Redirecionando...</title>
+  <script>
+    // Redireciona caminhos sem o basePath /sgo para a versão correta
+    // Ex: /portal/login → /sgo/portal/login
+    // Ex: /dashboard   → /sgo/dashboard
+    var path = window.location.pathname;
+    var search = window.location.search;
+    var hash = window.location.hash;
+    var base = '/sgo';
+
+    // Se já começa com /sgo, não redireciona (evita loop)
+    if (path.startsWith(base)) {
+      document.write('<p>Página não encontrada.</p>');
+    } else {
+      window.location.replace(base + path + search + hash);
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecionando...</p>
+</body>
+</html>
