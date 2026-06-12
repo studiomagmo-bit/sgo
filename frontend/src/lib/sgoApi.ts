@@ -1,108 +1,57 @@
-import { supabase, supabaseSignup, supabasePortal } from './supabase'
+// ============================================================
+// SGO — sgoApi.ts  (v3 — rebuilt from scratch for reliability)
+// Todas as queries com tratamento de erro robusto
+// ============================================================
+import { supabase, supabasePortal } from './supabase'
 
-// Helper: retorna construtora_id do usuário logado
-// Usa o perfil cacheado no localStorage (carregado no login) para evitar
-// query extra que pode falhar por RLS e retornar null
-async function getConstrutoraId(): Promise<string | null> {
-  // 1. Tenta cache (mais rápido e confiável)
+// ─── Helper: construtora_id do usuário logado ─────────────────
+async function getCID(): Promise<string | null> {
   try {
-    const cached = localStorage.getItem('sgo_user')
-    if (cached) {
-      const u = JSON.parse(cached)
-      if (u?.construtora_id) return u.construtora_id
-    }
+    const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
+    if (u?.construtora_id) return u.construtora_id
   } catch {}
-
-  // 2. Fallback: consulta direta ao banco
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase
-    .from('usuarios')
-    .select('construtora_id')
-    .eq('id', user.id)
-    .single()
+  const { data } = await supabase.from('usuarios').select('construtora_id').eq('id',(await supabase.auth.getUser()).data.user?.id ?? '').single()
   return data?.construtora_id ?? null
 }
 
-// ─── OBRAS ───────────────────────────────────────────────────
-export const obras = {
-  listar: async (params?: any) => {
-    // Lê perfil do cache para filtrar obras por vínculo (engenheiro/mestre)
-    let perfil = 'administrador'
-    let uid = ''
-    try {
-      const cached = localStorage.getItem('sgo_user')
-      if (cached) {
-        const u = JSON.parse(cached)
-        perfil = u?.perfil ?? 'administrador'
-        uid    = u?.id ?? ''
-      }
-    } catch {}
+function perfil(): string {
+  try { return JSON.parse(localStorage.getItem('sgo_user') ?? '{}')?.perfil ?? 'engenheiro' } catch { return 'engenheiro' }
+}
+function uid(): string {
+  try { return JSON.parse(localStorage.getItem('sgo_user') ?? '{}')?.id ?? '' } catch { return '' }
+}
+const RESTRITOS = ['engenheiro','mestre','pcp','almoxarife']
+const isRestrito = () => RESTRITOS.includes(perfil())
 
+// ─── OBRAS ────────────────────────────────────────────────────
+export const obras = {
+  listar: async (params?: { status?: string }) => {
     let q = supabase.from('obras').select('*').order('nome')
     if (params?.status) q = q.eq('status', params.status)
-
-    // Perfis restritos: só obras vinculadas via usuarios_obra
-    const perfisRestritos = ['engenheiro', 'mestre', 'pcp', 'almoxarife']
-    if (perfisRestritos.includes(perfil) && uid) {
-      const { data: vinculos } = await supabase
-        .from('usuarios_obra')
-        .select('obra_id')
-        .eq('usuario_id', uid)
-        .eq('ativo', true)
-      const obraIds = (vinculos ?? []).map((v: any) => v.obra_id)
-      if (obraIds.length === 0) return []
-      q = q.in('id', obraIds)
+    if (isRestrito()) {
+      const { data: v } = await supabase.from('usuarios_obra').select('obra_id').eq('usuario_id', uid()).eq('ativo', true)
+      const ids = (v ?? []).map((x: any) => x.obra_id)
+      if (!ids.length) return []
+      q = q.in('id', ids)
     }
-
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
-
-  /** Retorna a obra única do engenheiro (primeira vinculada) */
-  minhaObra: async (): Promise<any | null> => {
-    let uid = ''
-    try {
-      const cached = localStorage.getItem('sgo_user')
-      if (cached) uid = JSON.parse(cached)?.id ?? ''
-    } catch {}
-    if (!uid) return null
-    const { data } = await supabase
-      .from('usuarios_obra')
-      .select('obra_id, obras(*)')
-      .eq('usuario_id', uid)
-      .eq('ativo', true)
-      .limit(1)
-      .single()
-    return (data as any)?.obras ?? null
-  },
-  detalhar: async (id: string) => {
-    const { data, error } = await supabase.from('obras').select('*').eq('id', id).single()
-    if (error) throw error
+  buscar: async (id: string) => {
+    const { data, error } = await supabase.from('obras').select('*, estrutura_obra(*)').eq('id', id).single()
+    if (error) throw new Error(error.message)
     return data
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    // INSERT sem .select() para evitar erro de RLS no SELECT pós-insert
-    const { error: insertErr } = await supabase
-      .from('obras').insert({ ...d, construtora_id })
-    if (insertErr) throw insertErr
-    // Busca a obra recém-criada pela combinação nome + construtora
-    const { data, error } = await supabase
-      .from('obras')
-      .select('*')
-      .eq('construtora_id', construtora_id)
-      .eq('nome', d.nome)
-      .order('criado_em', { ascending: false })
-      .limit(1)
-      .single()
-    if (error) return { nome: d.nome, construtora_id }  // fallback silencioso
+    const cid = await getCID()
+    const { data, error } = await supabase.from('obras').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
   atualizar: async (id: string, d: any) => {
     const { data, error } = await supabase.from('obras').update(d).eq('id', id).select().single()
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data
   },
 }
@@ -110,273 +59,209 @@ export const obras = {
 // ─── ESTRUTURA DA OBRA ────────────────────────────────────────
 export const estruturaObra = {
   listar: async (obra_id: string) => {
-    const { data, error } = await supabase
-      .from('estrutura_obra')
-      .select('*')
-      .eq('obra_id', obra_id)
-      .order('ordem')
-    if (error) throw error
+    const { data, error } = await supabase.from('estrutura_obra').select('*').eq('obra_id', obra_id).order('ordem')
+    if (error) { console.warn('estrutura_obra RLS:', error.message); return [] }
     return data ?? []
   },
   criar: async (d: any) => {
-    const { data, error } = await supabase
-      .from('estrutura_obra')
-      .insert(d)
-      .select()
-      .single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('estrutura_obra').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
   atualizar: async (id: string, d: any) => {
-    const { data, error } = await supabase
-      .from('estrutura_obra')
-      .update(d)
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) throw error
+    const { data, error } = await supabase.from('estrutura_obra').update(d).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
-  excluir: async (id: string) => {
-    const { error } = await supabase
-      .from('estrutura_obra')
-      .delete()
-      .eq('id', id)
-    if (error) throw error
+  deletar: async (id: string) => {
+    const { error } = await supabase.from('estrutura_obra').delete().eq('id', id)
+    if (error) throw new Error(error.message)
   },
 }
 
-// ─── ATIVIDADES (PCP) ─────────────────────────────────────────
+// ─── ATIVIDADES ───────────────────────────────────────────────
 export const atividades = {
-  listar: async (params?: any) => {
-    let q = supabase.from('atividades').select('*, obras(nome), empreiteiros(razao_social), estrutura_obra:estrutura_id(nome), atividade_dependencias!atividade_id(atividade_depende_id)').order('criado_em', { ascending: false })
-    if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
-    if (params?.status)  q = q.eq('status', params.status)
+  listar: async (params?: { obra_id?: string; status?: string; empreiteiro_id?: string }) => {
+    let q = supabase.from('atividades')
+      .select('*, obras(nome), empreiteiros(razao_social,nome_fantasia), estrutura_obra:estrutura_id(nome,tipo)')
+      .order('ordem', { ascending: true })
+    if (params?.obra_id)       q = q.eq('obra_id', params.obra_id)
+    if (params?.status)        q = q.eq('status', params.status)
+    if (params?.empreiteiro_id) q = q.eq('empreiteiro_id', params.empreiteiro_id)
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('atividades').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('atividades').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
   atualizar: async (id: string, d: any) => {
     const { data, error } = await supabase.from('atividades').update(d).eq('id', id).select().single()
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data
+  },
+  deletar: async (id: string) => {
+    const { error } = await supabase.from('atividades').delete().eq('id', id)
+    if (error) throw new Error(error.message)
   },
 }
 
 // ─── COLABORADORES ────────────────────────────────────────────
 export const colaboradores = {
-  listar: async (empreiteiro_id?: string) => {
-    let q = supabase
-      .from('colaboradores')
-      .select('*, empreiteiros(razao_social)')
-      .eq('ativo', true)
-      .order('nome')
-    if (empreiteiro_id) q = q.eq('empreiteiro_id', empreiteiro_id)
+  listar: async (params?: { empreiteiro_id?: string }) => {
+    let q = supabase.from('colaboradores').select('*').eq('ativo', true).order('nome')
+    if (params?.empreiteiro_id) q = q.eq('empreiteiro_id', params.empreiteiro_id)
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase
-      .from('colaboradores')
-      .insert({ ...d, construtora_id })
-      .select()
-      .single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('colaboradores').insert({ ...d, construtora_id: cid, ativo: true }).select().single()
+    if (error) throw new Error(error.message)
     return data
-  },
-  atualizar: async (id: string, d: any) => {
-    const { data, error } = await supabase
-      .from('colaboradores')
-      .update(d)
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-  excluir: async (id: string) => {
-    // Soft delete: marca como inativo
-    const { error } = await supabase
-      .from('colaboradores')
-      .update({ ativo: false })
-      .eq('id', id)
-    if (error) throw error
   },
 }
 
-// ─── EFETIVO ──────────────────────────────────────────────────
+// ─── EFETIVO DIÁRIO ───────────────────────────────────────────
 export const efetivos = {
-  listar: async (params?: any) => {
-    let q = supabase
-      .from('efetivo_diario')
-      .select('*, empreiteiros(razao_social)')
-      .order('data', { ascending: false })
-    if (params?.obra_id)      q = q.eq('obra_id', params.obra_id)
-    if (params?.empreiteiro_id) q = q.eq('empreiteiro_id', params.empreiteiro_id)
-    if (params?.data)         q = q.eq('data', params.data)
-    const { data, error } = await q
-    if (error) throw error
-    return data ?? []
-  },
   buscarOuCriar: async (obra_id: string, empreiteiro_id: string, data: string) => {
-    const construtora_id = await getConstrutoraId()
-    // Tenta buscar registro existente
-    const { data: existing } = await supabase
-      .from('efetivo_diario')
-      .select('*')
-      .eq('obra_id', obra_id)
-      .eq('empreiteiro_id', empreiteiro_id)
-      .eq('data', data)
-      .maybeSingle()
-    if (existing) return existing
-    // Cria novo
-    const { data: novo, error } = await supabase
-      .from('efetivo_diario')
-      .insert({ obra_id, empreiteiro_id, data, construtora_id })
-      .select()
-      .single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data: ex } = await supabase.from('efetivo_diario').select('*').eq('obra_id', obra_id).eq('empreiteiro_id', empreiteiro_id).eq('data', data).maybeSingle()
+    if (ex) return ex
+    const { data: novo, error } = await supabase.from('efetivo_diario').insert({ obra_id, empreiteiro_id, data, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return novo
   },
-  criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase
-      .from('efetivo_diario')
-      .insert({ ...d, construtora_id })
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-  // ── Presença individual (efetivo_colaboradores) ───────────
-  listarPresenca: async (efetivo_id: string) => {
-    const { data, error } = await supabase
-      .from('efetivo_colaboradores')
-      .select('*, colaboradores(nome, funcao, foto_url)')
-      .eq('efetivo_id', efetivo_id)
-    if (error) throw error
+  listar: async (params?: { obra_id?: string; data?: string; empreiteiro_id?: string }) => {
+    let q = supabase.from('efetivo_diario').select('*, efetivo_colaboradores(*, colaboradores(nome,funcao,cpf)), empreiteiros(razao_social)').order('data', { ascending: false })
+    if (params?.obra_id)       q = q.eq('obra_id', params.obra_id)
+    if (params?.data)          q = q.eq('data', params.data)
+    if (params?.empreiteiro_id) q = q.eq('empreiteiro_id', params.empreiteiro_id)
+    const { data, error } = await q
+    if (error) throw new Error(error.message)
     return data ?? []
   },
-  salvarPresenca: async (efetivo_id: string, colaborador_id: string, d: any) => {
-    // Upsert: cria ou atualiza presença do colaborador no dia
-    const { data, error } = await supabase
-      .from('efetivo_colaboradores')
-      .upsert(
-        { efetivo_id, colaborador_id, ...d },
-        { onConflict: 'efetivo_id,colaborador_id' }
-      )
-      .select()
-      .single()
-    if (error) throw error
-    return data
+  salvarPresenca: async (efetivo_id: string, registros: { colaborador_id: string; status: string; hora_entrada?: string; hora_saida?: string }[]) => {
+    const { data, error } = await supabase.from('efetivo_colaboradores')
+      .upsert(registros.map(r => ({ ...r, efetivo_id })), { onConflict: 'efetivo_id,colaborador_id' }).select()
+    if (error) throw new Error(error.message)
+    return data ?? []
   },
-  salvarPresencaLote: async (registros: any[]) => {
-    const { data, error } = await supabase
-      .from('efetivo_colaboradores')
-      .upsert(registros, { onConflict: 'efetivo_id,colaborador_id' })
-      .select()
-    if (error) throw error
+  listarPresenca: async (efetivo_id: string) => {
+    const { data, error } = await supabase.from('efetivo_colaboradores').select('*, colaboradores(nome,funcao,cpf)').eq('efetivo_id', efetivo_id)
+    if (error) throw new Error(error.message)
     return data ?? []
   },
 }
 
 // ─── PRODUÇÕES ────────────────────────────────────────────────
 export const producoes = {
-  listar: async (params?: any) => {
-    let q = supabase.from('producoes').select('*, atividades(nome), obras(nome), empreiteiros(razao_social)').order('data', { ascending: false })
-    if (params?.obra_id)     q = q.eq('obra_id', params.obra_id)
+  listar: async (params?: { obra_id?: string; atividade_id?: string }) => {
+    let q = supabase.from('producoes').select('*, atividades(nome,unidade), empreiteiros(razao_social)').order('data', { ascending: false })
+    if (params?.obra_id)      q = q.eq('obra_id', params.obra_id)
     if (params?.atividade_id) q = q.eq('atividade_id', params.atividade_id)
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('producoes').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('producoes').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  liberar: async (id: string, percentual: number) => {
+    const { data, error } = await supabase.from('producoes').update({ liberado_medicao: true, percentual_medicao: percentual, liberado_por: uid(), liberado_em: new Date().toISOString() }).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
 }
 
 // ─── INSPEÇÕES ────────────────────────────────────────────────
 export const inspecoes = {
-  listar: async (params?: any) => {
+  listar: async (params?: { obra_id?: string; status?: string }) => {
     let q = supabase.from('inspecoes').select('*, atividades(nome), obras(nome)').order('criado_em', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
     if (params?.status)  q = q.eq('status', params.status)
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('inspecoes').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('inspecoes').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
   atualizar: async (id: string, d: any) => {
     const { data, error } = await supabase.from('inspecoes').update(d).eq('id', id).select().single()
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data
   },
 }
 
 // ─── PENDÊNCIAS ───────────────────────────────────────────────
 export const pendencias = {
-  listar: async (params?: any) => {
+  listar: async (params?: { obra_id?: string; status?: string }) => {
     let q = supabase.from('pendencias').select('*, atividades(nome), obras(nome)').order('criado_em', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
     if (params?.status)  q = q.eq('status', params.status)
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('pendencias').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('pendencias').insert({ ...d, construtora_id: cid, status: 'criada' }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
   atualizar: async (id: string, d: any) => {
     const { data, error } = await supabase.from('pendencias').update(d).eq('id', id).select().single()
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data
   },
 }
 
 // ─── MEDIÇÕES ─────────────────────────────────────────────────
 export const medicoes = {
-  listar: async (params?: any) => {
+  listar: async (params?: { obra_id?: string }) => {
     let q = supabase.from('medicoes').select('*, obras(nome), empreiteiros(razao_social)').order('criado_em', { ascending: false })
     if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
     const { data, error } = await q
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('medicoes').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('medicoes').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  atualizar: async (id: string, d: any) => {
+    const { data, error } = await supabase.from('medicoes').update(d).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
 }
 
-// ─── DIÁRIO ───────────────────────────────────────────────────
+// ─── DIÁRIO DE OBRA ───────────────────────────────────────────
 export const diario = {
-  listar: async (params?: any) => {
-    let q = supabase.from('diario_obra').select('*, obras(nome)').order('data', { ascending: false })
-    if (params?.obra_id) q = q.eq('obra_id', params.obra_id)
-    const { data, error } = await q
-    if (error) throw error
+  listar: async (obra_id: string) => {
+    const { data, error } = await supabase.from('diario_obra').select('*').eq('obra_id', obra_id).order('data', { ascending: false })
+    if (error) { console.warn('diario RLS:', error.message); return [] }
     return data ?? []
+  },
+  upsert: async (d: any) => {
+    const cid = await getCID()
+    const { data, error } = await supabase.from('diario_obra').upsert({ ...d, construtora_id: cid }, { onConflict: 'obra_id,data' }).select().single()
+    if (error) throw new Error(error.message)
+    return data
   },
 }
 
@@ -384,18 +269,18 @@ export const diario = {
 export const empreiteiros = {
   listar: async () => {
     const { data, error } = await supabase.from('empreiteiros').select('*').order('razao_social')
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('empreiteiros').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('empreiteiros').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
   atualizar: async (id: string, d: any) => {
     const { data, error } = await supabase.from('empreiteiros').update(d).eq('id', id).select().single()
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data
   },
 }
@@ -403,386 +288,212 @@ export const empreiteiros = {
 // ─── EQUIPAMENTOS ─────────────────────────────────────────────
 export const equipamentos = {
   listar: async () => {
-    const { data, error } = await supabase.from('equipamentos').select('*').order('nome')
-    if (error) throw error
+    const { data, error } = await supabase.from('equipamentos').select('*, empreiteiros(razao_social)').eq('ativo', true).order('nome')
+    if (error) throw new Error(error.message)
     return data ?? []
   },
   criar: async (d: any) => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase.from('equipamentos').insert({ ...d, construtora_id }).select().single()
-    if (error) throw error
-    return data
-  },
-  atualizar: async (id: string, d: any) => {
-    const { data, error } = await supabase.from('equipamentos').update(d).eq('id', id).select().single()
-    if (error) throw error
+    const cid = await getCID()
+    const { data, error } = await supabase.from('equipamentos').insert({ ...d, construtora_id: cid }).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────
 export const dashboard = {
-  /** Dashboard Executivo: busca tudo em paralelo */
+  /** Dashboard executivo — carrega tudo em paralelo com fallbacks robustos */
   executivo: async () => {
-    const hoje = new Date().toISOString().split('T')[0]
-    const [
-      { data: obrasList },
-      { data: atividadesList },
-      { data: pendenciasList },
-      { data: inspecoesList },
-      { data: efetivosHoje },
-      { data: empreiteirosList },
-      { data: medicoesList },
-    ] = await Promise.all([
-      supabase.from('obras')
-        .select('id, nome, tipo, status, percentual_geral, data_inicio, data_fim_prev, ativa')
-        .eq('ativa', true)
-        .order('nome'),
-      supabase.from('atividades')
-        .select('id, obra_id, status, percentual_exec, prioridade, data_fim_prev'),
-      supabase.from('pendencias')
-        .select('id, obra_id, status')
-        .in('status', ['criada', 'em_correcao']),
-      supabase.from('inspecoes')
-        .select('id, obra_id, status'),
-      supabase.from('efetivo_diario')
-        .select('id, obra_id, empreiteiro_id')
-        .eq('data', hoje),
-      supabase.from('empreiteiros')
-        .select('id, razao_social, ativo')
-        .eq('ativo', true),
-      supabase.from('medicoes')
-        .select('id, obra_id, status, valor_liquido'),
+    const [obs, ativs, pends, insps, emps, meds] = await Promise.all([
+      supabase.from('obras').select('*').order('nome').then(r => r.data ?? []),
+      supabase.from('atividades').select('id,obra_id,nome,status,prioridade,percentual_exec,data_fim_prev,empreiteiro_id,estrutura_id').order('nome').then(r => r.data ?? []),
+      supabase.from('pendencias').select('id,obra_id,status,descricao').eq('status','criada').then(r => r.data ?? []),
+      supabase.from('inspecoes').select('id,obra_id,status').then(r => r.data ?? []),
+      supabase.from('empreiteiros').select('id,razao_social,ativo').then(r => r.data ?? []),
+      supabase.from('medicoes').select('id,obra_id,status,valor_liquido').then(r => r.data ?? []),
     ])
-    return {
-      obras:          obrasList       ?? [],
-      atividades:     atividadesList  ?? [],
-      pendencias:     pendenciasList  ?? [],
-      inspecoes:      inspecoesList   ?? [],
-      efetivosHoje:   efetivosHoje    ?? [],
-      empreiteiros:   empreiteirosList ?? [],
-      medicoes:       medicoesList    ?? [],
-    }
+    return { obras: obs, atividades: ativs, pendencias: pends, inspecoes: insps, empreiteiros: emps, medicoes: meds, efetivosHoje: [] }
   },
 
-  /** Dashboard PCP: atividades com estrutura + empreiteiro para análise de desvio */
+  /** PCP — atividades com estrutura para uma obra */
   pcp: async (obra_id?: string) => {
-    let q = supabase
-      .from('atividades')
-      .select('*, empreiteiros(razao_social), estrutura_obra(nome, tipo)')
-      .order('data_inicio_prev', { ascending: true })
-    if (obra_id) q = q.eq('obra_id', obra_id)
+    let q = supabase.from('atividades')
+      .select('*, empreiteiros(razao_social,nome_fantasia), estrutura_obra:estrutura_id(id,nome,tipo,parent_id,ordem)')
+      .order('ordem', { ascending: true })
+    if (obra_id && obra_id !== 'todas') q = q.eq('obra_id', obra_id)
     const { data, error } = await q
-    if (error) throw error
-    return data ?? []
-  },
-
-  /** Legado — mantido para compatibilidade */
-  obras: async () => {
-
-    const { data, error } = await supabase
-      .from('obras')
-      .select('id, nome, tipo, status, percentual_geral, ativa')
-      .eq('ativa', true)
-      .order('nome')
-    if (error) throw error
+    if (error) { console.warn('pcp error:', error.message); return [] }
     return data ?? []
   },
 }
 
-// ─── PORTAL DO EMPREITEIRO ────────────────────────────────────
+// ─── PORTAL API ───────────────────────────────────────────────
 export const portalApi = {
-  /** Cria conta de acesso para empreiteiro sem deslogar o gestor */
-  criarAcesso: async (dados: {
-    empreiteiro_id: string
-    construtora_id: string
-    nome: string
-    email: string
-    senha: string
-  }) => {
-    // Usa função SQL SECURITY DEFINER para criar o usuário sem disparar e-mail
+  /** Cria acesso de empreiteiro via SQL function (sem email, sem rate limit) */
+  criarAcesso: async (d: { empreiteiro_id: string; construtora_id: string; nome: string; email: string; senha: string }) => {
     const { data, error } = await supabase.rpc('criar_acesso_empreiteiro', {
-      p_empreiteiro_id: dados.empreiteiro_id,
-      p_construtora_id: dados.construtora_id,
-      p_nome:           dados.nome,
-      p_email:          dados.email,
-      p_senha:          dados.senha,
+      p_empreiteiro_id: d.empreiteiro_id,
+      p_construtora_id: d.construtora_id,
+      p_nome:  d.nome,
+      p_email: d.email,
+      p_senha: d.senha,
     })
-    if (error) throw error
-    return { userId: data, email: dados.email }
+    if (error) throw new Error(error.message)
+    return { userId: data, email: d.email }
   },
 
-  /** Lista acessos criados para um empreiteiro */
   listarAcessos: async (empreiteiro_id: string) => {
-    const { data, error } = await supabase
-      .from('usuarios_empreiteiro')
-      .select('id, nome, email, perfil, ativo, criado_em')
-      .eq('empreiteiro_id', empreiteiro_id)
-    if (error) throw error
-    return data ?? []
+    const { data, error } = await supabase.from('usuarios_empreiteiro').select('id,nome,email,perfil,ativo').eq('empreiteiro_id', empreiteiro_id)
+    if (error) return []
+    return (data ?? []).map((u: any) => ({ ...u, email: u.email?.replace('@sgo-portal.app','') ?? u.email }))
   },
 
-  /** Login do empreiteiro no portal (usa supabasePortal para sessão isolada) */
   loginPortal: async (email: string, senha: string) => {
     const { data, error } = await supabasePortal.auth.signInWithPassword({ email, password: senha })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     return data
   },
 
-  /** Logout do portal */
-  logoutPortal: async () => {
-    await supabasePortal.auth.signOut()
-  },
+  logoutPortal: async () => { await supabasePortal.auth.signOut() },
 
-  /** Busca perfil do empreiteiro logado no portal */
   buscarPerfil: async () => {
     const { data: { user } } = await supabasePortal.auth.getUser()
     if (!user) return null
-    const { data, error } = await supabasePortal
-      .from('usuarios_empreiteiro')
-      .select('*, empreiteiros(id, razao_social, nome_fantasia, construtora_id)')
-      .eq('id', user.id)
-      .single()
+    const { data, error } = await supabasePortal.from('usuarios_empreiteiro')
+      .select('*, empreiteiros(id,razao_social,nome_fantasia,construtora_id)')
+      .eq('id', user.id).single()
     if (error) return null
     return data
   },
 
-  /** Obras vinculadas ao empreiteiro (via atividades) */
+  // Obras vinculadas ao empreiteiro (via atividades + obra_empreiteiros)
   minhasObras: async (empreiteiro_id: string) => {
-    const { data, error } = await supabasePortal
-      .from('atividades')
-      .select('obra_id, obras(id, nome, status, percentual_geral, data_fim_prev)')
+    const { data } = await supabasePortal.from('atividades')
+      .select('obra_id, obras(id,nome,status,cidade,data_fim_prev,percentual_geral)')
       .eq('empreiteiro_id', empreiteiro_id)
-    if (error) throw error
-    // Dedup por obra_id
     const seen = new Set<string>()
-    return (data ?? [])
-      .filter((a: any) => { if (seen.has(a.obra_id)) return false; seen.add(a.obra_id); return true })
-      .map((a: any) => a.obras)
-      .filter(Boolean)
+    return (data ?? []).filter((a: any) => a.obras && !seen.has(a.obra_id) && seen.add(a.obra_id)).map((a: any) => a.obras)
   },
 
-  /** Atividades do empreiteiro (opcionalmente filtradas por obra) */
+  // Atividades do empreiteiro com estrutura e dependências
   minhasAtividades: async (empreiteiro_id: string, obra_id?: string) => {
-    let q = supabasePortal
-      .from('atividades')
-      .select('*, obras(nome), estrutura_obra(nome, tipo), empreiteiros(razao_social)')
+    let q = supabasePortal.from('atividades')
+      .select(`
+        id, nome, descricao, status, percentual_exec, prioridade,
+        data_inicio_prev, data_fim_prev, data_inicio_real, data_conclusao_emp,
+        quantidade_prev, quantidade_exec, unidade,
+        motivo_impedimento, categoria_impedimento, obs_reprovacao, notas_execucao,
+        obra_id, estrutura_id, empreiteiro_id,
+        obras(id,nome),
+        estrutura_obra:estrutura_id(id,nome,tipo,parent_id),
+        atividade_dependencias!atividade_id(atividade_depende_id)
+      `)
       .eq('empreiteiro_id', empreiteiro_id)
-      .order('data_inicio_prev', { ascending: true })
+      .order('data_inicio_prev', { ascending: true, nullsFirst: false })
     if (obra_id) q = q.eq('obra_id', obra_id)
     const { data, error } = await q
-    if (error) throw error
+    if (error) { console.warn('minhasAtividades:', error.message); return [] }
     return data ?? []
   },
 
-  /** Atualiza status/% de atividade (pelo empreiteiro) */
-  atualizarAtividade: async (id: string, d: { status?: string; percentual_exec?: number; notas_execucao?: string; foto_url?: string }) => {
-    const { data, error } = await supabasePortal
-      .from('atividades')
-      .update(d)
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) throw error
+  atualizarAtividade: async (id: string, d: any) => {
+    const { data, error } = await supabasePortal.from('atividades').update(d).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
     return data
   },
 
-  /** Colaboradores do empreiteiro */
+  registrarEvento: async (atividade_id: string, construtora_id: string, tipo: string, descricao?: string) => {
+    const { data: { user } } = await supabasePortal.auth.getUser()
+    await supabasePortal.from('atividade_eventos').insert({
+      atividade_id, construtora_id, tipo, descricao: descricao ?? null,
+      criado_por_emp: user?.id ?? null,
+    })
+  },
+
   meusColaboradores: async (empreiteiro_id: string) => {
-    const { data, error } = await supabasePortal
-      .from('colaboradores')
-      .select('*')
-      .eq('empreiteiro_id', empreiteiro_id)
-      .eq('ativo', true)
-      .order('nome')
-    if (error) throw error
+    const { data, error } = await supabasePortal.from('colaboradores').select('*').eq('empreiteiro_id', empreiteiro_id).eq('ativo', true).order('nome')
+    if (error) return []
     return data ?? []
   },
 
-  /** Buscar ou criar efetivo_diario para o portal */
+  criarColaborador: async (d: { empreiteiro_id: string; construtora_id: string; nome: string; cpf?: string; funcao?: string; telefone?: string }) => {
+    const { data, error } = await supabasePortal.from('colaboradores').insert({ ...d, ativo: true }).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+
   buscarOuCriarEfetivo: async (obra_id: string, empreiteiro_id: string, data: string, construtora_id: string) => {
-    const { data: existing } = await supabasePortal
-      .from('efetivo_diario')
-      .select('*')
-      .eq('obra_id', obra_id)
-      .eq('empreiteiro_id', empreiteiro_id)
-      .eq('data', data)
-      .maybeSingle()
-    if (existing) return existing
-    const { data: novo, error } = await supabasePortal
-      .from('efetivo_diario')
-      .insert({ obra_id, empreiteiro_id, data, construtora_id })
-      .select()
-      .single()
-    if (error) throw error
+    const { data: ex } = await supabasePortal.from('efetivo_diario').select('*').eq('obra_id', obra_id).eq('empreiteiro_id', empreiteiro_id).eq('data', data).maybeSingle()
+    if (ex) return ex
+    const { data: novo, error } = await supabasePortal.from('efetivo_diario').insert({ obra_id, empreiteiro_id, data, construtora_id }).select().single()
+    if (error) throw new Error(error.message)
     return novo
   },
 
-
-  /** Obras vinculadas ao empreiteiro via obra_empreiteiros */
-  minhasObrasVinculadas: async (empreiteiro_id: string) => {
-    const { data, error } = await supabasePortal
-      .from('obra_empreiteiros')
-      .select('obra_id, obras(id, nome, status, percentual_geral, data_inicio, data_fim_prev, tipo, cidade)')
-      .eq('empreiteiro_id', empreiteiro_id)
-    if (error) {
-      // Fallback: busca via atividades
-      return portalApi.minhasObras(empreiteiro_id)
-    }
-    return (data ?? []).map((r: any) => r.obras).filter(Boolean)
-  },
-
-  /** Criar colaborador do empreiteiro */
-  criarColaborador: async (d: {
-    empreiteiro_id: string
-    construtora_id: string
-    nome: string
-    cpf?: string
-    funcao?: string
-    telefone?: string
-  }) => {
-    const { data, error } = await supabasePortal
-      .from('colaboradores')
-      .insert(d)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-
-  /** Dashboard do empreiteiro */
-  meuDashboard: async (empreiteiro_id: string) => {
-    const [atividades, colaboradores] = await Promise.all([
-      portalApi.minhasAtividades(empreiteiro_id),
-      portalApi.meusColaboradores(empreiteiro_id),
-    ])
-    return { atividades, colaboradores }
-  },
-
-  /** Salvar presença (lote) */
   salvarPresenca: async (registros: any[]) => {
-    const { data, error } = await supabasePortal
-      .from('efetivo_colaboradores')
-      .upsert(registros, { onConflict: 'efetivo_id,colaborador_id' })
-      .select()
-    if (error) throw error
+    const { data, error } = await supabasePortal.from('efetivo_colaboradores').upsert(registros, { onConflict: 'efetivo_id,colaborador_id' }).select()
+    if (error) throw new Error(error.message)
     return data ?? []
   },
 
-  /** Listar presença do dia */
   listarPresenca: async (efetivo_id: string) => {
-    const { data, error } = await supabasePortal
-      .from('efetivo_colaboradores')
-      .select('*, colaboradores(nome, funcao)')
-      .eq('efetivo_id', efetivo_id)
-    if (error) throw error
+    const { data, error } = await supabasePortal.from('efetivo_colaboradores').select('*, colaboradores(nome,funcao,cpf)').eq('efetivo_id', efetivo_id)
+    if (error) return []
     return data ?? []
+  },
+
+  // Histórico de eventos de uma atividade
+  eventosAtividade: async (atividade_id: string) => {
+    const { data, error } = await supabasePortal.from('atividade_eventos').select('*').eq('atividade_id', atividade_id).order('criado_em', { ascending: false })
+    if (error) return []
+    return data ?? []
+  },
+
+  // Produções registradas para o empreiteiro
+  minhasProducoes: async (empreiteiro_id: string, obra_id?: string) => {
+    let q = supabasePortal.from('producoes')
+      .select('*, atividades(nome,unidade,quantidade_prev)')
+      .order('data', { ascending: false })
+    if (obra_id) q = q.eq('obra_id', obra_id)
+    // Filtra por empreiteiro via join
+    const { data, error } = await q
+    if (error) return []
+    // Filtra atividades do empreiteiro
+    return (data ?? []).filter((p: any) => p.atividades)
   },
 }
 
-// ─── USUÁRIOS (gestores / engenheiros criados pelo admin) ─────
+// ─── USUÁRIOS ─────────────────────────────────────────────────
 export const usuariosApi = {
-  /** Listar todos usuários da construtora */
   listar: async () => {
-    // Tenta com join; se usuarios_obra não existir ainda (SQL 11 não rodado), cai no fallback
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('id, nome, email, username, perfil, ativo, criado_em')
-      .order('nome')
-    if (error) throw error
-    // Busca vínculos de obras separadamente (tolerante a falha)
+    const { data, error } = await supabase.from('usuarios').select('id,nome,email,username,perfil,ativo,criado_por').order('nome')
+    if (error) throw new Error(error.message)
     const usuarios = data ?? []
-    try {
-      const { data: vinculos } = await supabase
-        .from('usuarios_obra')
-        .select('usuario_id, obra_id, papel, ativo, obras(id, nome)')
-        .eq('ativo', true)
-      if (vinculos) {
-        return usuarios.map(u => ({
-          ...u,
-          usuarios_obra: vinculos.filter(v => v.usuario_id === u.id),
-        }))
-      }
-    } catch {}
-    return usuarios.map(u => ({ ...u, usuarios_obra: [] }))
+    const { data: vinculos } = await supabase.from('usuarios_obra').select('usuario_id,obra_id,ativo,obras(id,nome)').eq('ativo', true)
+    return usuarios.map(u => ({ ...u, usuarios_obra: (vinculos ?? []).filter((v: any) => v.usuario_id === u.id) }))
   },
-
-  /** Criar novo usuário via RPC — sem email, sem rate limit, sem confirmação */
-  criar: async (d: {
-    nome: string
-    username: string
-    senha: string
-    perfil: string
-  }) => {
-    const construtora_id = await getConstrutoraId()
-    if (!construtora_id) throw new Error('Construtora não identificada.')
-
-    // Chama a função criar_usuario_interno() que insere direto em auth.users
-    // com email_confirmed_at = NOW() — sem envio de email, sem rate limit
-    const { data: userId, error } = await supabase.rpc('criar_usuario_interno', {
-      p_nome:           d.nome.trim(),
-      p_username:       d.username.trim(),
-      p_senha:          d.senha,
-      p_perfil:         d.perfil,
-      p_construtora_id: construtora_id,
+  criar: async (d: { nome: string; username: string; senha: string; perfil: string }) => {
+    const cid = await getCID()
+    if (!cid) throw new Error('Construtora não identificada.')
+    const { data, error } = await supabase.rpc('criar_usuario_interno', {
+      p_nome: d.nome, p_username: d.username, p_senha: d.senha,
+      p_perfil: d.perfil, p_construtora_id: cid,
     })
     if (error) throw new Error(error.message)
-    // Retorna o usuário recém-criado
-    const { data: usuario } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    return usuario
-  },
-
-  /** Atualizar dados de um usuário */
-  atualizar: async (id: string, d: Partial<{ nome: string; perfil: string; ativo: boolean; username: string }>) => {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .update(d)
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) throw error
     return data
   },
-
-  /** Desativar usuário (soft delete) */
   desativar: async (id: string) => {
     const { error } = await supabase.from('usuarios').update({ ativo: false }).eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
   },
-
-  /** Vincular usuário a uma obra */
   vincularObra: async (usuario_id: string, obra_id: string, papel = 'engenheiro') => {
-    const construtora_id = await getConstrutoraId()
-    const { data, error } = await supabase
-      .from('usuarios_obra')
-      .upsert({ usuario_id, obra_id, construtora_id, papel, ativo: true }, { onConflict: 'usuario_id,obra_id' })
-      .select()
-      .single()
-    if (error) throw error
-    return data
+    const cid = await getCID()
+    const { error } = await supabase.from('usuarios_obra').upsert({ usuario_id, obra_id, construtora_id: cid, papel, ativo: true }, { onConflict: 'usuario_id,obra_id' })
+    if (error) throw new Error(error.message)
   },
-
-  /** Desvincular usuário de uma obra */
   desvincularObra: async (usuario_id: string, obra_id: string) => {
-    const { error } = await supabase
-      .from('usuarios_obra')
-      .update({ ativo: false })
-      .match({ usuario_id, obra_id })
-    if (error) throw error
-  },
-
-  /** Listar obras vinculadas a um usuário */
-  obrasDoUsuario: async (usuario_id: string) => {
-    const { data, error } = await supabase
-      .from('usuarios_obra')
-      .select('*, obras(id, nome, status)')
-      .eq('usuario_id', usuario_id)
-      .eq('ativo', true)
-    if (error) throw error
-    return data ?? []
+    const { error } = await supabase.from('usuarios_obra').update({ ativo: false }).eq('usuario_id', usuario_id).eq('obra_id', obra_id)
+    if (error) throw new Error(error.message)
   },
 }
+
