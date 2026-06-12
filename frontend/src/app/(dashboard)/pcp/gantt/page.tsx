@@ -53,7 +53,7 @@ export default function GanttPage() {
 
   // ─── Carrega obras ────────────────────────────────────────────
   useEffect(() => {
-    obrasApi.listar().then(o => { setObras(o); if (o.length === 1) setObraId(o[0].id) })
+    obrasApi.listar().then(o => { setObras(o); if (o.length >= 1) setObraId(prev => prev || o[0].id) })
   }, [])
 
   // ─── Carrega atividades + estruturas + empreiteiros ───────────

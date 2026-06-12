@@ -121,7 +121,10 @@ export default function PCPPage() {
 
   // ── Carga inicial ──
   useEffect(() => {
-    obrasApi.listar().then(setObras)
+    obrasApi.listar().then(obs => {
+      setObras(obs)
+      if (obs.length >= 1) setObraId(prev => prev || obs[0].id)
+    })
     empreiteirosApi.listar().then(setEmpreiteiros)
   }, [])
 
