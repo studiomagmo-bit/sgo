@@ -238,11 +238,17 @@ export default function EmpreiteirosPage() {
 
                 {/* Ação */}
                 <div className="border-t border-gray-100">
-                  <button onClick={() => abrirCriarAcesso(e)}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-                    <KeyRound className="h-4 w-4" />
-                    {temAcesso ? 'Criar outro acesso' : 'Criar acesso ao portal'}
-                  </button>
+                  {!temAcesso ? (
+                    <button onClick={() => abrirCriarAcesso(e)}
+                      className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+                      <KeyRound className="h-4 w-4" /> Criar acesso ao portal
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-400">
+                      <UserCheck className="h-4 w-4 text-teal-500" />
+                      <span className="text-teal-600 font-medium">Portal ativo</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )
