@@ -348,7 +348,7 @@ export const dashboard = {
   pcp: async (obra_id?: string) => {
     let q = supabase.from('atividades')
       .select('*, empreiteiros(razao_social,nome_fantasia), estrutura_obra:estrutura_id(id,nome,tipo,parent_id,ordem)')
-      .order('ordem', { ascending: true })
+      .order('criado_em', { ascending: true })
     if (obra_id && obra_id !== 'todas') q = q.eq('obra_id', obra_id)
     const { data, error } = await q
     if (error) { console.warn('pcp error:', error.message); return [] }
