@@ -125,12 +125,14 @@ export default function EmpreiteirosPage() {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href="/portal/login"
+            href={typeof window !== 'undefined'
+              ? window.location.origin + (window.location.pathname.startsWith('/sgo') ? '/sgo' : '') + '/portal/login/'
+              : '/sgo/portal/login/'}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-xs text-blue-300 hover:bg-blue-900/40 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
           >
-            <ExternalLink className="h-3.5 w-3.5" /> Portal do Empreiteiro
+            <ExternalLink className="h-3.5 w-3.5" /> Abrir Portal do Empreiteiro
           </a>
           <button
             onClick={() => { setForm(FORM_INICIAL); setShowModal(true) }}

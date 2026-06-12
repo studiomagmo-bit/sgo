@@ -12,14 +12,13 @@ interface AuthContextData {
   loading: boolean
   login: (email: string, password: string) => Promise<UserWithPerfil | null>
   logout: () => void
+  refreshPerfil: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
-// Resolve o caminho correto considerando o basePath do Next.js (/sgo em produção)
 function loginUrl() {
   if (typeof window === 'undefined') return '/login'
-  // Se o pathname começa com /sgo, o app está em produção com basePath
   const base = window.location.pathname.startsWith('/sgo') ? '/sgo' : ''
   return base + '/login/'
 }
@@ -30,13 +29,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   async function fetchPerfil(uid: string, accessToken: string): Promise<UserWithPerfil> {
-    const { data } = await supabase
+    // Sempre busca do banco — nunca confia no cache para o perfil
+    const { data, error } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', uid)
       .single()
 
-    const userData: UserWithPerfil = (data && data.id) ? data : {
+    if (error) console.warn('fetchPerfil error:', error.message)
+
+    const userData: UserWithPerfil = (data && data.id) ? { ...data } : {
       id: uid,
       nome: 'Usuário',
       email: '',
@@ -46,36 +48,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Detecta superadmin via tabela master
-    if (userData.perfil_sistema !== 'superadmin') {
-      const { data: masterData } = await supabase
-        .from('master')
-        .select('id')
-        .eq('id', uid)
-        .maybeSingle()
-      userData.perfil_sistema = masterData ? 'superadmin' : 'user'
-    }
+    const { data: masterData } = await supabase
+      .from('master')
+      .select('id')
+      .eq('id', uid)
+      .maybeSingle()
+    userData.perfil_sistema = masterData ? 'superadmin' : 'user'
 
     setUser(userData)
     setToken(accessToken)
+
+    // Salva no cache MAS com versão — para invalidar caches antigos
     try {
+      const cache = { ...userData, _v: 2, _ts: Date.now() }
+      localStorage.setItem('sgo_user', JSON.stringify(cache))
       localStorage.setItem('sgo_token', accessToken)
-      localStorage.setItem('sgo_user', JSON.stringify(userData))
     } catch {}
+
     return userData
+  }
+
+  async function refreshPerfil() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) await fetchPerfil(session.user.id, session.access_token)
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        // Sempre busca do banco na inicialização — ignora cache de perfil
         fetchPerfil(session.user.id, session.access_token)
           .finally(() => setLoading(false))
       } else {
+        // Sem sessão — tenta cache apenas para mostrar algo enquanto carrega
         try {
           const cached = localStorage.getItem('sgo_user')
           const cachedToken = localStorage.getItem('sgo_token')
-          if (cached && cachedToken) {
-            setUser(JSON.parse(cached))
+          const parsed = cached ? JSON.parse(cached) : null
+          // Só usa cache se tiver versão 2 (nova) — descarta caches antigos
+          if (parsed?._v === 2 && cachedToken) {
+            setUser(parsed)
             setToken(cachedToken)
+          } else {
+            // Limpa cache antigo
+            localStorage.removeItem('sgo_user')
+            localStorage.removeItem('sgo_token')
           }
         } catch {}
         setLoading(false)
@@ -116,12 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('sgo_token')
       localStorage.removeItem('sgo_user')
     } catch {}
-    // Redireciona para /login respeitando o basePath /sgo em produção
     window.location.replace(loginUrl())
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshPerfil }}>
       {children}
     </AuthContext.Provider>
   )

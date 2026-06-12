@@ -6,7 +6,7 @@ import {
   Building2, LayoutDashboard, GitBranch, Users, ClipboardList,
   HardHat, CheckCircle, AlertTriangle, DollarSign, Truck,
   BookOpen, LogOut, Settings, Shield,
-  PieChart, BarChart3, UserCog, ChevronRight,
+  PieChart, BarChart3, UserCog, ChevronRight, ExternalLink,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -28,6 +28,8 @@ const NAV_GESTOR = [
   { label: 'Equipamentos',     icon: Truck,           href: '/equipamentos' },
   { divider: 'Empreiteiros' },
   { label: 'Empreiteiros',     icon: HardHat,         href: '/empreiteiros' },
+  { label: 'Portal Empreit.',  icon: ExternalLink,    href: '/sgo/portal/login', external: true },
+  { label: 'Portal Empreit.',  icon: ExternalLink,    href: '/sgo/portal/login', external: true },
   { label: 'Efetivo Geral',    icon: Users,           href: '/empreiteiro-portal' },
   { label: 'Medições',         icon: DollarSign,      href: '/medicoes' },
   { divider: 'Registros' },
@@ -52,6 +54,7 @@ const NAV_ENGENHEIRO = [
   { label: 'Pendências',       icon: AlertTriangle,   href: '/pendencias' },
   { divider: 'Empreiteiros' },
   { label: 'Empreiteiros',     icon: HardHat,         href: '/empreiteiros' },
+  { label: 'Portal Empreit.',  icon: ExternalLink,    href: '/sgo/portal/login', external: true },
   { divider: 'Registros' },
   { label: 'Diário de Obra',   icon: BookOpen,        href: '/diario' },
 ]
@@ -119,8 +122,29 @@ export function Sidebar() {
             )
           }
           const Icon = item.icon!
-          const isActive = pathname === item.href ||
-            (item.href !== '/dashboard' && item.href !== '/pcp-dashboard' && pathname.startsWith(item.href))
+          const isExternal = (item as any).external === true
+          const isActive = !isExternal && (pathname === item.href ||
+            (item.href !== '/dashboard' && item.href !== '/pcp-dashboard' && pathname.startsWith(item.href)))
+
+          // Links externos (portal do empreiteiro) abrem em nova aba
+          if (isExternal) {
+            const portalUrl = typeof window !== 'undefined'
+              ? window.location.origin + (window.location.pathname.startsWith('/sgo') ? '/sgo' : '') + '/portal/login/'
+              : '/sgo/portal/login/'
+            return (
+              <a
+                key={item.href}
+                href={portalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-500 hover:bg-amber-50 hover:text-amber-700 transition-all duration-150"
+              >
+                <Icon className="h-4 w-4 shrink-0 text-amber-400" />
+                <span className="flex-1 truncate">{item.label}</span>
+                <ExternalLink className="h-3 w-3 shrink-0 text-gray-300" />
+              </a>
+            )
+          }
 
           return (
             <Link
