@@ -9,7 +9,7 @@ import {
 import { useAuth } from '@/contexts/auth'
 import type { Atividade, Obra, StatusAtividade, PrioridadeAtividade } from '@/types'
 import { supabase } from '@/lib/supabase'
-import { Plus, Loader2, GitBranch, AlertTriangle, X, ChevronDown } from 'lucide-react'
+import { Plus, Loader2, GitBranch, AlertTriangle, X, ChevronDown, Pencil, Trash2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { clsx } from 'clsx'
 
@@ -88,6 +88,42 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 const inputCls =
   'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 
+// ─── Helpers de prazo ──────────────────────────────────────────
+function diasEntre(de: string, ate: string) {
+  const d1 = new Date(de + 'T00:00:00')
+  const d2 = new Date(ate + 'T00:00:00')
+  return Math.round((d2.getTime() - d1.getTime()) / 86400000)
+}
+
+/** Verifica se a produção da atividade já foi iniciada pelo empreiteiro */
+function producaoIniciada(a: Atividade): boolean {
+  return Number(a.quantidade_exec) > 0
+    || Number(a.percentual_exec) > 0
+    || !!a.data_inicio_real
+    || a.status === 'em_andamento'
+    || a.status === 'concluida'
+}
+
+// ─── Badge de atraso / antecipação ────────────────────────────
+function PrazoStatus({ a }: { a: Atividade }) {
+  if (!a.data_fim_prev) return <span className="text-gray-400 text-xs">—</span>
+
+  if (a.status === 'cancelada') return <span className="text-gray-400 text-xs">—</span>
+
+  if (a.status === 'concluida') {
+    if (!a.data_fim_real) return <span className="badge-verde">Concluída</span>
+    const dif = diasEntre(a.data_fim_prev, a.data_fim_real)
+    if (dif > 0)  return <span className="badge-vermelho">{dif}d atraso</span>
+    if (dif < 0)  return <span className="badge-verde">{Math.abs(dif)}d antecipada</span>
+    return <span className="badge-verde">No prazo</span>
+  }
+
+  const hoje = new Date().toISOString().slice(0, 10)
+  const dif = diasEntre(a.data_fim_prev, hoje)
+  if (dif > 0) return <span className="badge-vermelho">{dif}d atrasada</span>
+  return <span className="text-xs text-gray-500">{Math.abs(dif)}d restantes</span>
+}
+
 // ─── Página principal ─────────────────────────────────────────
 export default function PCPPage() {
   // ── Dados de referência ──
@@ -104,10 +140,15 @@ export default function PCPPage() {
   const [atividades, setAtividades]     = useState<Atividade[]>([])
   const [loading, setLoading]           = useState(false)
 
+  // ── Estrutura da obra selecionada (para exibir nomes na tabela) ──
+  const [estruturaPagina, setEstruturaPagina] = useState<EstruturaNo[]>([])
+
   // ── Modal ──
   const [showModal, setShowModal]       = useState(false)
   const [form, setForm]                 = useState<AtividadeForm>(FORM_INICIAL)
   const [saving, setSaving]             = useState(false)
+  const [editingId, setEditingId]       = useState<string | null>(null)
+  const [estruturaAlvo, setEstruturaAlvo] = useState<string | null>(null)
 
   // ── Estrutura em cascata ──
   const [estruturaNos, setEstruturaNos]   = useState<EstruturaNo[]>([])
@@ -127,6 +168,14 @@ export default function PCPPage() {
     })
     empreiteirosApi.listar().then(setEmpreiteiros)
   }, [])
+
+  // ── Carrega estrutura da obra filtrada (para mostrar nomes na tabela) ──
+  useEffect(() => {
+    if (!obraId) { setEstruturaPagina([]); return }
+    estruturaObra.listar(obraId)
+      .then(nos => setEstruturaPagina(nos as EstruturaNo[]))
+      .catch(() => setEstruturaPagina([]))
+  }, [obraId])
 
   // ── Carrega atividades ao mudar filtros ──
   const carregarAtividades = () => {
@@ -167,6 +216,21 @@ export default function PCPPage() {
     })()
   }, [form.obra_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Ao editar: reconstrói a cascata (Nv1/Nv2/Nv3) a partir do estrutura_id salvo ──
+  useEffect(() => {
+    if (!estruturaAlvo || estruturaNos.length === 0) return
+    const map = Object.fromEntries(estruturaNos.map(n => [n.id, n]))
+    const cadeia: string[] = []
+    let atual: EstruturaNo | undefined = map[estruturaAlvo]
+    while (atual) {
+      cadeia.unshift(atual.id)
+      atual = atual.parent_id ? map[atual.parent_id] : undefined
+    }
+    setEstruturaNv1(cadeia[0] ?? '')
+    setEstruturaNv2(cadeia[1] ?? '')
+    setEstruturaNv3(cadeia[2] ?? '')
+  }, [estruturaNos, estruturaAlvo])
+
   // ── Helpers cascata ──
   const resetEstrutura = () => {
     setEstruturaNv1('')
@@ -193,11 +257,35 @@ export default function PCPPage() {
   }
 
   // ── Lookups para a tabela ──
-  const estruturaMap = Object.fromEntries(estruturaNos.map(n => [n.id, n.nome]))
+  const estruturaMap       = Object.fromEntries(estruturaNos.map(n => [n.id, n.nome]))
+  const estruturaMapPagina = Object.fromEntries(estruturaPagina.map(n => [n.id, n.nome]))
 
   // ── Handlers do modal ──
-  const abrirModal = () => {
+  const abrirModalNovo = () => {
+    setEditingId(null)
+    setEstruturaAlvo(null)
     setForm({ ...FORM_INICIAL, obra_id: obraId })
+    resetEstrutura()
+    setShowModal(true)
+  }
+
+  const abrirModalEdicao = (a: Atividade) => {
+    setEditingId(a.id)
+    setEstruturaAlvo(a.estrutura_id ?? null)
+    setForm({
+      nome:             a.nome,
+      obra_id:          a.obra_id,
+      status:           a.status,
+      prioridade:       a.prioridade,
+      percentual_exec:  Number(a.percentual_exec),
+      data_inicio_prev: a.data_inicio_prev ?? '',
+      data_fim_prev:    a.data_fim_prev ?? '',
+      descricao:        a.descricao ?? '',
+      empreiteiro_id:   a.empreiteiro_id ?? '',
+      quantidade_prev:  Number(a.quantidade_prev),
+      unidade:          a.unidade ?? '',
+      dep_atividade_id: '',
+    })
     resetEstrutura()
     setShowModal(true)
   }
@@ -205,6 +293,8 @@ export default function PCPPage() {
   const fecharModal = () => {
     setShowModal(false)
     setForm(FORM_INICIAL)
+    setEditingId(null)
+    setEstruturaAlvo(null)
     resetEstrutura()
     setEstruturaNos([])
   }
@@ -219,37 +309,69 @@ export default function PCPPage() {
 
     setSaving(true)
     try {
-      const novaAtividade = await pcpAtividades.criar({
-        nome:             form.nome.trim(),
-        obra_id:          form.obra_id,
-        status:           form.status,
-        prioridade:       form.prioridade,
-        percentual_exec:  Number(form.percentual_exec),
-        data_inicio_prev: form.data_inicio_prev || null,
-        data_fim_prev:    form.data_fim_prev    || null,
-        descricao:        form.descricao        || null,
-        estrutura_id:     estruturaIdFinal,
-        empreiteiro_id:   form.empreiteiro_id   || null,
-        quantidade_prev:  Number(form.quantidade_prev),
-        unidade:          form.unidade          || null,
-        quantidade_exec:  0,
-        bloqueada:        false,
-        libera_medicao:   false,
-      })
-      // Salva dependência se informada
-      if (form.dep_atividade_id && novaAtividade?.id) {
-        await supabase.from('atividade_dependencias').insert({
-          atividade_id:         novaAtividade.id,
-          atividade_depende_id: form.dep_atividade_id,
-        }).then(() => {})
+      if (editingId) {
+        // ── Edição ──
+        await pcpAtividades.atualizar(editingId, {
+          nome:             form.nome.trim(),
+          obra_id:          form.obra_id,
+          status:           form.status,
+          prioridade:       form.prioridade,
+          percentual_exec:  Number(form.percentual_exec),
+          data_inicio_prev: form.data_inicio_prev || null,
+          data_fim_prev:    form.data_fim_prev    || null,
+          descricao:        form.descricao        || null,
+          estrutura_id:     estruturaIdFinal,
+          empreiteiro_id:   form.empreiteiro_id   || null,
+          quantidade_prev:  Number(form.quantidade_prev),
+          unidade:          form.unidade          || null,
+        })
+        toast.success('Atividade atualizada com sucesso!')
+      } else {
+        // ── Criação ──
+        const novaAtividade = await pcpAtividades.criar({
+          nome:             form.nome.trim(),
+          obra_id:          form.obra_id,
+          status:           form.status,
+          prioridade:       form.prioridade,
+          percentual_exec:  Number(form.percentual_exec),
+          data_inicio_prev: form.data_inicio_prev || null,
+          data_fim_prev:    form.data_fim_prev    || null,
+          descricao:        form.descricao        || null,
+          estrutura_id:     estruturaIdFinal,
+          empreiteiro_id:   form.empreiteiro_id   || null,
+          quantidade_prev:  Number(form.quantidade_prev),
+          unidade:          form.unidade          || null,
+          quantidade_exec:  0,
+          bloqueada:        false,
+          libera_medicao:   false,
+        })
+        // Salva dependência se informada
+        if (form.dep_atividade_id && novaAtividade?.id) {
+          await supabase.from('atividade_dependencias').insert({
+            atividade_id:         novaAtividade.id,
+            atividade_depende_id: form.dep_atividade_id,
+          }).then(() => {})
+        }
+        toast.success('Atividade criada com sucesso!')
       }
-      toast.success('Atividade criada com sucesso!')
       fecharModal()
       carregarAtividades()
     } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao criar atividade')
+      toast.error(err?.message ?? 'Erro ao salvar atividade')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // ── Exclusão ──
+  const handleDelete = async (a: Atividade) => {
+    if (!confirm(`Excluir a atividade "${a.nome}"? Esta ação não pode ser desfeita.`)) return
+    try {
+      await pcpAtividades.deletar(a.id)
+      toast.success('Atividade excluída')
+      carregarAtividades()
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Erro ao excluir atividade')
     }
   }
 
@@ -277,7 +399,7 @@ export default function PCPPage() {
           <p className="text-sm text-gray-500 mt-1">Planejamento e controle de produção</p>
         </div>
         <button
-          onClick={abrirModal}
+          onClick={abrirModalNovo}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
           <Plus className="h-4 w-4" /> Nova Atividade
@@ -339,10 +461,10 @@ export default function PCPPage() {
         </div>
       ) : (
         <div className="rounded-xl border bg-white shadow-sm overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
+          <table className="w-full text-sm min-w-[1020px]">
             <thead className="bg-slate-50 text-xs text-gray-500 uppercase tracking-wider">
               <tr>
-                {['Atividade', 'Estrutura', 'Empreiteiro', 'Prazo', '%', 'Status', 'Prioridade'].map(h => (
+                {['Atividade', 'Estrutura', 'Empreiteiro', 'Prazo', 'Atraso/Antecip.', '%', 'Status', 'Prioridade', 'Ações'].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -350,14 +472,14 @@ export default function PCPPage() {
             <tbody className="divide-y divide-gray-100">
               {atividades.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-gray-400">
+                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400">
                     Nenhuma atividade encontrada
                   </td>
                 </tr>
               ) : atividades.map(a => {
                 const s    = statusConfig[a.status]       || { label: a.status,    cls: 'badge-cinza' }
                 const p    = prioridadeConfig[a.prioridade] || { label: a.prioridade, cls: 'badge-cinza' }
-                const nomEstr  = a.estrutura_id ? (estruturaMap[a.estrutura_id] ?? a.estrutura_id) : '—'
+                const nomEstr  = a.estrutura_id ? (estruturaMapPagina[a.estrutura_id] ?? '—') : '—'
                 // empreiteiro pode vir via join ou não
                 const nomeEmp  = (a as any).empreiteiros?.razao_social
                   ?? (empreiteiros.find(e => e.id === (a as any).empreiteiro_id)?.razao_social)
@@ -366,6 +488,7 @@ export default function PCPPage() {
                   a.data_inicio_prev ? new Date(a.data_inicio_prev + 'T12:00:00').toLocaleDateString('pt-BR') : null,
                   a.data_fim_prev    ? new Date(a.data_fim_prev + 'T12:00:00').toLocaleDateString('pt-BR')    : null,
                 ].filter(Boolean).join(' → ') || '—'
+                const editavel = !producaoIniciada(a)
 
                 return (
                   <tr
@@ -395,6 +518,11 @@ export default function PCPPage() {
 
                     {/* PRAZO */}
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">{prazo}</td>
+
+                    {/* ATRASO / ANTECIPAÇÃO */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <PrazoStatus a={a} />
+                    </td>
 
                     {/* % */}
                     <td className="px-4 py-3">
@@ -439,6 +567,35 @@ export default function PCPPage() {
                     <td className="px-4 py-3">
                       <span className={p.cls}>{p.label}</span>
                     </td>
+
+                    {/* AÇÕES */}
+                    <td className="px-4 py-3">
+                      {editavel ? (
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => abrirModalEdicao(a)}
+                            title="Editar atividade"
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(a)}
+                            title="Excluir atividade"
+                            className="text-gray-400 hover:text-red-600 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          title="Bloqueado: a produção desta atividade já foi iniciada pelo empreiteiro"
+                          className="inline-flex items-center text-gray-300"
+                        >
+                          <Lock className="h-4 w-4" />
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -447,14 +604,16 @@ export default function PCPPage() {
         </div>
       )}
 
-      {/* ── Modal Nova Atividade ───────────────────────────────── */}
+      {/* ── Modal Nova/Editar Atividade ───────────────────────── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
 
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold text-gray-900">Nova Atividade</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {editingId ? 'Editar Atividade' : 'Nova Atividade'}
+              </h2>
               <button
                 onClick={fecharModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -579,8 +738,8 @@ export default function PCPPage() {
                 </select>
               </Campo>
 
-              {/* Dependência (A inicia quando B terminar) */}
-              {atividades.length > 0 && (
+              {/* Dependência (A inicia quando B terminar) — só na criação */}
+              {!editingId && atividades.length > 0 && (
                 <Campo label="Inicia após (dependência)">
                   <select
                     value={form.dep_atividade_id}
@@ -711,7 +870,7 @@ export default function PCPPage() {
                   className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2 transition-colors"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Salvar
+                  {editingId ? 'Salvar alterações' : 'Salvar'}
                 </button>
               </div>
             </form>
