@@ -35,8 +35,8 @@ export default function PortalLoginPage() {
     if (!username.trim()) { setErro('Informe o nome de usuário.'); return }
     setLoading(true)
     try {
-      // Monta o email interno: username@portal.sgo.local
-      const emailInterno = username.trim().toLowerCase() + '@portal.sgo.local'
+      // Monta o email interno: username@sgo-portal.app
+      const emailInterno = username.trim().toLowerCase() + '@sgo-portal.app'
       await loginPortal(emailInterno, senha)
 
       // Verifica se a senha é a padrão (123456) — força troca

@@ -111,7 +111,7 @@ export default function EmpreiteirosPage() {
     try {
       const construtora_id = (empAcesso as any).construtora_id
       // Email interno gerado automaticamente a partir do username
-      const emailInterno = username.trim().toLowerCase() + '@portal.sgo.local'
+      const emailInterno = username.trim().toLowerCase() + '@sgo-portal.app'
       await portalApi.criarAcesso({
         empreiteiro_id: empAcesso.id,
         construtora_id,
@@ -227,7 +227,7 @@ export default function EmpreiteirosPage() {
                           <div key={a.id} className="flex items-center gap-1.5">
                             <UserCheck className="h-3 w-3 text-teal-500 shrink-0" />
                             <span className="text-xs text-gray-700 font-mono">
-                              {a.email?.replace('@portal.sgo.local', '') || a.email}
+                              {a.email?.replace('@sgo-portal.app', '') || a.email}
                             </span>
                           </div>
                         ))}
