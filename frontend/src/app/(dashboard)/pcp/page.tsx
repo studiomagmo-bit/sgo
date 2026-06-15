@@ -365,7 +365,7 @@ export default function PCPPage() {
 
   // ── Exclusão ──
   const handleDelete = async (a: Atividade) => {
-    if (!confirm(`Excluir a atividade "${a.nome}"? Esta ação não pode ser desfeita.`)) return
+    if (!window.confirm(`Excluir "${a.nome}"?`)) return
     try {
       await pcpAtividades.deletar(a.id)
       toast.success('Atividade excluída')
