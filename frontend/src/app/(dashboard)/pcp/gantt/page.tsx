@@ -34,9 +34,7 @@ function today() { return new Date().toISOString().split('T')[0] }
 
 export default function GanttPage() {
   const { user } = useAuth()
-  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
-  const [obras, setObras]       = useState<any[]>([])
-  const [obraId, setObraId]     = useState('')
+  const { obras, obraId, setObraId, isRestrito } = useObraContext()
   const [atividades, setAtividades] = useState<any[]>([])
   const [loading, setLoading]   = useState(false)
   const [zoom, setZoom]         = useState(1)         // multiplicador
@@ -55,7 +53,6 @@ export default function GanttPage() {
 
   // ─── Carrega obras ────────────────────────────────────────────
   useEffect(() => {
-    obrasApi.listar().then(o => { setObras(o); if (o.length >= 1) setObraId(prev => prev || o[0].id) })
   }, [])
 
   // ─── Carrega atividades + estruturas + empreiteiros ───────────

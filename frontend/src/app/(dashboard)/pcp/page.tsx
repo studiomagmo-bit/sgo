@@ -2,14 +2,13 @@
 import { useEffect, useState } from 'react'
 import {
   atividades as pcpAtividades,
-  obras as obrasApi,
   estruturaObra,
   empreiteiros as empreiteirosApi,
 } from '@/lib/sgoApi'
 import { useObraContext } from '@/hooks/useObraContext'
 import { ObraSelector } from '@/components/ObraSelector'
 import { useAuth } from '@/contexts/auth'
-import type { Atividade, Obra, StatusAtividade, PrioridadeAtividade } from '@/types'
+import type { Atividade, StatusAtividade, PrioridadeAtividade } from '@/types'
 import { supabase } from '@/lib/supabase'
 import { Plus, Loader2, GitBranch, AlertTriangle, X, ChevronDown, Pencil, Trash2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -130,12 +129,8 @@ function PrazoStatus({ a }: { a: Atividade }) {
 export default function PCPPage() {
   // ── Dados de referência ──
   const { user } = useAuth()
-  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
-  const [obras, setObras]               = useState<Obra[]>([])
+  const { obras, obraId, setObraId, isRestrito } = useObraContext()
   const [empreiteiros, setEmpreiteiros] = useState<Empreiteiro[]>([])
-
-  // ── Filtros da listagem ──
-  const [obraId, setObraId]             = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
 
   // ── Listagem ──
@@ -164,10 +159,6 @@ export default function PCPPage() {
 
   // ── Carga inicial ──
   useEffect(() => {
-    obrasApi.listar().then(obs => {
-      setObras(obs)
-      if (obs.length >= 1) setObraId(prev => prev || obs[0].id)
-    })
     empreiteirosApi.listar().then(setEmpreiteiros)
   }, [])
 

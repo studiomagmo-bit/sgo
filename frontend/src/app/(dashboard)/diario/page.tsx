@@ -32,10 +32,7 @@ function hoje() { return new Date().toISOString().split('T')[0] }
 
 export default function DiarioPage() {
   const { user } = useAuth()
-  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
-
-  const [obras, setObras]     = useState<Obra[]>([])
-  const [obraId, setObraId]   = useState('')
+  const { obras, obraId, setObraId, isRestrito } = useObraContext()
   const [diarios, setDiarios] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [gerando, setGerando] = useState(false)
@@ -55,17 +52,7 @@ export default function DiarioPage() {
   })
   const [salvando, setSalvando] = useState(false)
 
-  useEffect(() => {
-    obrasApi.listar().then(obs => {
-      setObras(obs)
-      try {
-        const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
-        if (['engenheiro','mestre','pcp','almoxarife'].includes(u?.perfil) && obs.length === 1) {
-          setObraId(obs[0].id)
-        }
-      } catch {}
-    })
-  }, [])
+  
 
   const carregarDiarios = useCallback((id: string) => {
     if (!id) { setDiarios([]); return }

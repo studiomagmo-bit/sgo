@@ -41,9 +41,7 @@ const formInicial: FormData = {
 
 export default function MedicoesPage() {
   const { user } = useAuth()
-  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
-  const [obras, setObras]               = useState<Obra[]>([])
-  const [obraId, setObraId]             = useState('')
+  const { obras, obraId, setObraId, isRestrito } = useObraContext()
   const [medicoes, setMedicoes]         = useState<Medicao[]>([])
   const [loading, setLoading]           = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('')
@@ -55,18 +53,7 @@ export default function MedicoesPage() {
   const [saving, setSaving]             = useState(false)
 
   // Carregar obras e empreiteiros ao montar
-  useEffect(() => {
-    obrasApi.listar().then(obs => {
-      setObras(obs)
-      try {
-        const u = JSON.parse(localStorage.getItem('sgo_user') ?? '{}')
-        if (['engenheiro','mestre','pcp','almoxarife'].includes(u?.perfil) && obs.length === 1) {
-          setObraId(obs[0].id)
-        }
-      } catch {}
-    })
-    empreiteirosApi.listar().then(setEmpreiteiros)
-  }, [])
+  
 
   // Carregar medições ao trocar obra/filtro
   useEffect(() => {

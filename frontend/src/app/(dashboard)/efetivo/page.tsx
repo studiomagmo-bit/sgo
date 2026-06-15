@@ -36,12 +36,7 @@ function hoje() {
 }
 
 export default function EfetivoPage() {
-  const [obras, setObras] = useState<Obra[]>([])
-  const [empreiteiros, setEmpreiteiros] = useState<Empreiteiro[]>([])
-
-  const { user } = useAuth()
-  const isRestrito = ['engenheiro','mestre','pcp','almoxarife'].includes((user as any)?.perfil ?? '')
-  const [obraId, setObraId] = useState('')
+  const { obras, obraId, setObraId, isRestrito } = useObraContext()
   const [empreteiroId, setEmpreteiroId] = useState('')
   const [data, setData] = useState(hoje())
 

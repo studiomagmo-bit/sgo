@@ -58,10 +58,6 @@ export default function ProducoesPage() {
   const [saving, setSaving]       = useState(false)
 
   useEffect(() => {
-    obrasApi.listar().then(obs => {
-      setObras(obs)
-      if (obs.length >= 1) setObraId(prev => prev || obs[0].id)
-    })
   }, [])
 
   const carregarPendentes = useCallback(() => {
