@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useObraContext } from '@/hooks/useObraContext'
+import { ObraSelector } from '@/components/ObraSelector'
 import { obras as obrasApi } from '@/lib/sgoApi'
 import { useAuth } from '@/contexts/auth'
 import type { Obra } from '@/types'
@@ -215,17 +217,7 @@ export default function DiarioPage() {
 
       {/* Seletor de obra */}
       <div className="flex items-center gap-3">
-        {!isRestrito ? (
-          <select value={obraId} onChange={e => setObraId(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[220px] bg-white">
-            <option value="">Selecione uma obra...</option>
-            {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-          </select>
-        ) : obras[0] && (
-          <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-sm text-blue-700 font-medium">
-            <Building2 className="h-4 w-4 text-blue-500 shrink-0" />{obras[0].nome}
-          </div>
-        )}
+        <ObraSelector obras={obras} obraId={obraId} setObraId={setObraId} isRestrito={isRestrito} />
         {obraNome && <span className="text-sm text-gray-500">{diarios.length} registro(s)</span>}
       </div>
 

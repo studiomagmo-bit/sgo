@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { pendencias as pendenciasApi, obras as obrasApi, atividades as pcpAtividades } from '@/lib/sgoApi'
+import { useObraContext } from '@/hooks/useObraContext'
+import { ObraSelector } from '@/components/ObraSelector'
 import { useAuth } from '@/contexts/auth'
 import type { Pendencia, Obra, Atividade } from '@/types'
 import { Plus, Loader2, AlertTriangle, X } from 'lucide-react'
@@ -147,15 +149,7 @@ export default function PendenciasPage() {
 
       {/* filtros */}
       <div className="flex gap-3 flex-wrap">
-        {!isRestrito && (
-        <select
-          value={obraId}
-          onChange={e => setObraId(e.target.value)}
-          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
-        >
-          <option value="">Selecione uma obra...</option>
-          {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-        </select>
+        <ObraSelector obras={obras} obraId={obraId} setObraId={setObraId} isRestrito={isRestrito} />
       )}
         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">

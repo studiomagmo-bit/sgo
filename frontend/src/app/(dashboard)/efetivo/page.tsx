@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { obras as obrasApi, empreiteiros as empreiteirosApi, efetivos, colaboradores as colaboradoresApi } from '@/lib/sgoApi'
+import { useObraContext } from '@/hooks/useObraContext'
+import { ObraSelector } from '@/components/ObraSelector'
 import { useAuth } from '@/contexts/auth'
 import {
   Users, CalendarDays, Building2, HardHat, CheckCircle2,
@@ -186,20 +188,7 @@ export default function EfetivoPage() {
           <label className="block text-xs font-medium text-gray-500 mb-1">
             <Building2 className="inline h-3 w-3 mr-1" />Obra *
           </label>
-          {isRestrito && obras[0] ? (
-            <div className="w-full rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-800 font-medium">
-              {obras[0].nome}
-            </div>
-          ) : (
-            <select
-              value={obraId}
-              onChange={e => setObraId(e.target.value)}
-              className="w-full rounded-lg bg-gray-100 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
-            >
-              <option value="">Selecionar obra...</option>
-              {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-            </select>
-          )}
+          <ObraSelector obras={obras} obraId={obraId} setObraId={setObraId} isRestrito={isRestrito} />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">

@@ -3,39 +3,30 @@ import { useEffect, useState, useCallback } from 'react'
 import { obras as obrasApi } from '@/lib/sgoApi'
 import { useAuth } from '@/contexts/auth'
 
-const PERFIS_RESTRITOS = ['engenheiro', 'mestre', 'pcp', 'almoxarife']
+const RESTRITOS = ['engenheiro','mestre','pcp','almoxarife']
 
-interface ObraContext {
-  obras:       any[]
-  obraId:      string
-  setObraId:   (id: string) => void
-  isRestrito:  boolean
-  loading:     boolean
-}
-
-export function useObraContext(defaultId = ''): ObraContext {
+export function useObraContext(initialId = '') {
   const { user } = useAuth()
-  const perfil     = (user as any)?.perfil ?? 'engenheiro'
-  const isRestrito = PERFIS_RESTRITOS.includes(perfil)
+  const isRestrito = RESTRITOS.includes((user as any)?.perfil ?? '')
 
   const [obras, setObras]     = useState<any[]>([])
-  const [obraId, setObraId]   = useState(defaultId)
+  const [obraId, _setObraId] = useState(initialId)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     obrasApi.listar().then(obs => {
       setObras(obs)
-      if (obs.length >= 1 && (!obraId || isRestrito)) {
-        setObraId(obs[0].id)
+      // Perfil restrito: força a obra única, não permite escolha
+      if (isRestrito && obs.length >= 1) {
+        _setObraId(obs[0].id)
       }
-      setLoading(false)
-    }).catch(() => setLoading(false))
-  }, [isRestrito]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSetObraId = useCallback((id: string) => {
-    if (isRestrito) return  // engenheiro não pode trocar
-    setObraId(id)
+    }).finally(() => setLoading(false))
   }, [isRestrito])
 
-  return { obras, obraId, setObraId: handleSetObraId, isRestrito, loading }
+  const setObraId = useCallback((id: string) => {
+    if (isRestrito) return  // engenheiro não pode trocar
+    _setObraId(id)
+  }, [isRestrito])
+
+  return { obras, obraId, setObraId, isRestrito, loading }
 }

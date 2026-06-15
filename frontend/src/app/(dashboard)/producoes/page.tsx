@@ -5,6 +5,8 @@ import {
   obras     as obrasApi,
   atividades as pcpAtividades,
 } from '@/lib/sgoApi'
+import { useObraContext } from '@/hooks/useObraContext'
+import { ObraSelector } from '@/components/ObraSelector'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/auth'
 import type { Obra, TipoProducao } from '@/types'
@@ -180,15 +182,7 @@ export default function ProducoesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Produções</h1>
           <p className="text-sm text-gray-500 mt-1">Validações pendentes + apontamentos de produção</p>
         </div>
-        {!isRestrito && (
-        <select
-          value={obraId}
-          onChange={e => setObraId(e.target.value)}
-          className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
-        >
-          <option value="">Selecione uma obra...</option>
-          {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-        </select>
+        <ObraSelector obras={obras} obraId={obraId} setObraId={setObraId} isRestrito={isRestrito} />
       )}
       </div>
 
