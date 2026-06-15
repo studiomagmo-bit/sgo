@@ -266,7 +266,9 @@ export default function PCPPage() {
   const abrirModalNovo = () => {
     setEditingId(null)
     setEstruturaAlvo(null)
-    setForm({ ...FORM_INICIAL, obra_id: obraId })
+    // Engenheiro: sempre usa a obra vinculada (única)
+    const obraParaForm = isRestrito && obras.length >= 1 ? obras[0].id : obraId
+    setForm({ ...FORM_INICIAL, obra_id: obraParaForm })
     resetEstrutura()
     setShowModal(true)
   }
@@ -411,7 +413,6 @@ export default function PCPPage() {
       {/* Filtros */}
       <div className="flex gap-3 flex-wrap">
         <ObraSelector obras={obras} obraId={obraId} setObraId={setObraId} isRestrito={isRestrito} />
-      )}
 
         <select
           value={filtroStatus}
@@ -633,19 +634,26 @@ export default function PCPPage() {
               </Campo>
 
               {/* Obra */}
-              <Campo label="Obra *">
-                <select
-                  required
-                  value={form.obra_id}
-                  onChange={e => set('obra_id', e.target.value)}
-                  className={inputCls}
-                >
-                  <option value="">Selecione...</option>
-                  {obras.map(o => (
-                    <option key={o.id} value={o.id}>{o.nome}</option>
-                  ))}
-                </select>
-              </Campo>
+              {isRestrito ? (
+                <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 text-sm font-semibold text-blue-800 flex items-center gap-2">
+                  <span className="text-blue-400">Obra:</span>
+                  {obras.find(o => o.id === form.obra_id)?.nome ?? obras[0]?.nome ?? '—'}
+                </div>
+              ) : (
+                <Campo label="Obra *">
+                  <select
+                    required
+                    value={form.obra_id}
+                    onChange={e => set('obra_id', e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">Selecione...</option>
+                    {obras.map(o => (
+                      <option key={o.id} value={o.id}>{o.nome}</option>
+                    ))}
+                  </select>
+                </Campo>
+              )}
 
               {/* ── Seletor Cascata de Estrutura ─── */}
               {form.obra_id && (
